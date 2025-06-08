@@ -1,0 +1,142 @@
+{
+  "id": "iot-device",
+  "name": "IoT Device",
+  "description": "Security policy for IoT devices with limited network access",
+  "category": "IoT",
+  "tags": ["iot", "device", "sensor", "restricted"],
+  "variables": [
+    {
+      "name": "device_ip",
+      "description": "IP address of the IoT device",
+      "type": "ipv4",
+      "required": true,
+      "example": "10.0.50.10"
+    },
+    {
+      "name": "device_mac",
+      "description": "MAC address of the IoT device",
+      "type": "mac",
+      "required": true,
+      "example": "AA:BB:CC:DD:EE:FF"
+    },
+    {
+      "name": "mqtt_broker",
+      "description": "MQTT broker IP address",
+      "type": "ipv4",
+      "required": true,
+      "example": "10.0.10.50"
+    },
+    {
+      "name": "ntp_server",
+      "description": "NTP server for time synchronization",
+      "type": "ipv4",
+      "required": false,
+      "default": "10.0.0.1",
+      "example": "10.0.0.1"
+    },
+    {
+      "name": "update_server",
+      "description": "Firmware update server",
+      "type": "ipv4",
+      "required": false,
+      "example": "10.0.100.100"
+    },
+    {
+      "name": "allow_local_discovery",
+      "description": "Allow mDNS/SSDP for local discovery",
+      "type": "boolean",
+      "required": false,
+      "default": false
+    },
+    {
+      "name": "telemetry_port",
+      "description": "Port for telemetry data",
+      "type": "port",
+      "required": false,
+      "default": 8883
+    }
+  ],
+  "rules": [
+    {
+      "name": "verify-device-mac",
+      "description": "Ensure traffic comes from registered device",
+      "priority": 3000,
+      "direction": "ingress",
+      "action": "drop",
+      "match": "ip4.src == {{device_ip}} && eth.src != {{device_mac}}",
+      "log": true
+    },
+    {
+      "name": "allow-mqtt",
+      "description": "Allow MQTT communication to broker",
+      "priority": 2500,
+      "direction": "egress",
+      "action": "allow",
+      "match": "ip4.src == {{device_ip}} && ip4.dst == {{mqtt_broker}} && tcp.dst == {{telemetry_port}}"
+    },
+    {
+      "name": "allow-ntp",
+      "description": "Allow NTP for time sync",
+      "priority": 2400,
+      "direction": "egress",
+      "action": "allow",
+      "match": "ip4.src == {{device_ip}} && ip4.dst == {{ntp_server}} && udp.dst == 123"
+    },
+    {
+      "name": "allow-dns",
+      "description": "Allow DNS queries",
+      "priority": 2300,
+      "direction": "egress",
+      "action": "allow",
+      "match": "ip4.src == {{device_ip}} && udp.dst == 53"
+    },
+    {
+      "name": "allow-updates",
+      "description": "Allow firmware updates",
+      "priority": 2200,
+      "direction": "egress",
+      "action": "allow",
+      "match": "{{if update_server}}ip4.src == {{device_ip}} && ip4.dst == {{update_server}} && tcp.dst == 443{{else}}0{{end}}"
+    },
+    {
+      "name": "allow-local-discovery",
+      "description": "Allow mDNS/SSDP for discovery",
+      "priority": 2100,
+      "direction": "egress",
+      "action": "allow",
+      "match": "{{if allow_local_discovery}}ip4.src == {{device_ip}} && (udp.dst == 5353 || udp.dst == 1900){{else}}0{{end}}"
+    },
+    {
+      "name": "allow-dhcp",
+      "description": "Allow DHCP requests",
+      "priority": 2000,
+      "direction": "egress",
+      "action": "allow",
+      "match": "ip4.src == {{device_ip}} && udp.dst == 67"
+    },
+    {
+      "name": "block-device-ingress",
+      "description": "Block all inbound connections to device",
+      "priority": 1000,
+      "direction": "ingress",
+      "action": "drop",
+      "match": "ip4.dst == {{device_ip}}",
+      "log": true
+    },
+    {
+      "name": "block-device-egress",
+      "description": "Block all other outbound connections",
+      "priority": 100,
+      "direction": "egress",
+      "action": "drop",
+      "match": "ip4.src == {{device_ip}}",
+      "log": true
+    }
+  ],
+  "metadata": {
+    "author": "Security Team",
+    "version": "1.0",
+    "last_updated": "2024-01-01",
+    "notes": "This template implements strict security controls for IoT devices, allowing only essential communications."
+  }
+}

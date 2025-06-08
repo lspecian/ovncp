@@ -1,0 +1,70 @@
+# Gitleaks configuration for OVN Control Platform
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlisted files and paths"
+paths = [
+    '''vendor''',
+    '''node_modules''',
+    '''\.git''',
+    '''\.vscode''',
+    '''test/fixtures''',
+    '''.*_test\.go''',
+    '''.*\.test\.(js|ts)''',
+    '''dist/''',
+    '''build/''',
+]
+
+# Custom rules for OVN-specific patterns
+[[rules]]
+description = "OVN API Key"
+id = "ovn-api-key"
+regex = '''(?i)(ovn[_\-]?api[_\-]?key|OVN_API_KEY)\s*[:=]\s*['"]?([a-zA-Z0-9]{32,})['"]?'''
+tags = ["ovn", "api", "key"]
+
+[[rules]]
+description = "Database Connection String"
+id = "db-connection-string"
+regex = '''(?i)(postgres://|postgresql://|mysql://)[^:]+:[^@]+@[^/]+/[^\s]+'''
+tags = ["database", "connection"]
+
+[[rules]]
+description = "JWT Secret"
+id = "jwt-secret"
+regex = '''(?i)(jwt[_\-]?secret|JWT_SECRET)\s*[:=]\s*['"]?([a-zA-Z0-9+/]{32,})['"]?'''
+tags = ["jwt", "auth"]
+
+# Entropy-based detection for high-entropy strings
+[[rules]]
+description = "High Entropy String"
+id = "high-entropy-string"
+regex = '''['"]([a-zA-Z0-9+/]{40,})['"]'''
+entropy = 4.5
+tags = ["entropy", "secret"]
+
+# Allowlist specific test values and examples
+[[rules.allowlist]]
+regexes = [
+    '''test[_\-]?secret''',
+    '''example[_\-]?key''',
+    '''dummy[_\-]?password''',
+    '''localhost''',
+    '''127\.0\.0\.1''',
+    '''placeholder''',
+    '''your[_\-]?.*[_\-]?here''',
+    '''xxx+''',
+]
+
+# Allow specific files with known false positives
+[[rules.allowlist]]
+paths = [
+    '''README\.md''',
+    '''.*\.example''',
+    '''.*\.sample''',
+    '''docs/.*''',
+    '''.*\.lock''',
+    '''go\.sum''',
+    '''package-lock\.json''',
+]

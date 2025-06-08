@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ovncp-postgres-dev
+    environment:
+      POSTGRES_DB: ovncp
+      POSTGRES_USER: ovncp
+      POSTGRES_PASSWORD: ovncp_password
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ovncp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # OVN Northbound Database (development/testing)
+  ovn-northbound:
+    image: ovn-org/ovn-nb:latest
+    container_name: ovncp-ovn-nb-dev
+    ports:
+      - "6641:6641"
+    volumes:
+      - ovn_nb_data_dev:/var/lib/ovn
+    command: ["ovsdb-server", "--remote=ptcp:6641", "/etc/ovn/ovnnb_db.db"]
+
+  # API Backend (development with hot reload)
+  api:
+    image: cosmtrek/air:latest
+    container_name: ovncp-api-dev
+    working_dir: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # API Configuration
+      API_PORT: "8080"
+      API_HOST: "0.0.0.0"
+      
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ovncp
+      DB_USER: ovncp
+      DB_PASSWORD: ovncp_password
+      DB_SSL_MODE: disable
+      
+      # OVN Configuration
+      OVN_NORTHBOUND_DB: "tcp:ovn-northbound:6641"
+      
+      # Auth Configuration
+      AUTH_ENABLED: "true"
+      JWT_SECRET: "development-secret-key"
+      
+      # OAuth Providers (configure as needed)
+      OAUTH_GITHUB_CLIENT_ID: ${OAUTH_GITHUB_CLIENT_ID:-}
+      OAUTH_GITHUB_CLIENT_SECRET: ${OAUTH_GITHUB_CLIENT_SECRET:-}
+      OAUTH_GITHUB_REDIRECT_URL: "http://localhost:3000/auth/callback/github"
+      
+      OAUTH_GOOGLE_CLIENT_ID: ${OAUTH_GOOGLE_CLIENT_ID:-}
+      OAUTH_GOOGLE_CLIENT_SECRET: ${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      OAUTH_GOOGLE_REDIRECT_URL: "http://localhost:3000/auth/callback/google"
+      
+      # Logging
+      LOG_LEVEL: "debug"
+      LOG_FORMAT: "json"
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/vendor
+    command: air
+
+  # Web Frontend (development with hot reload)
+  web:
+    image: node:20-alpine
+    container_name: ovncp-web-dev
+    working_dir: /app
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev"
+
+volumes:
+  postgres_data_dev:
+  ovn_nb_data_dev:

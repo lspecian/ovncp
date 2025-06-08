@@ -1,0 +1,278 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  GO_VERSION: '1.22'
+
+jobs:
+  # Static Application Security Testing (SAST)
+  sast:
+    name: SAST Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: go, javascript
+        queries: security-and-quality
+    
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Build
+      run: |
+        go mod download
+        go build -v ./...
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+    
+    # Go security scanning
+    - name: Run gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        args: '-fmt sarif -out gosec-results.sarif ./...'
+    
+    - name: Upload gosec results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: gosec-results.sarif
+        category: gosec
+    
+    # Nancy vulnerability scanner for Go dependencies
+    - name: Run Nancy
+      run: |
+        go list -json -deps ./... | docker run --rm -i sonatypecorp/nancy:latest sleuth
+    
+    # Staticcheck
+    - name: Run Staticcheck
+      uses: dominikh/staticcheck-action@v1
+      with:
+        version: "latest"
+
+  # Dependency scanning
+  dependency-scan:
+    name: Dependency Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Go dependency scanning
+    - name: Run Go vulnerability check
+      uses: golang/govulncheck-action@v1
+      with:
+        go-version-input: ${{ env.GO_VERSION }}
+        check-latest: true
+    
+    # JavaScript dependency scanning
+    - name: Run npm audit
+      run: |
+        cd web
+        npm audit --production
+    
+    # License scanning
+    - name: License Scan
+      uses: fossas/fossa-action@main
+      with:
+        api-key: ${{ secrets.FOSSA_API_KEY }}
+
+  # Container scanning
+  container-scan:
+    name: Container Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Build Docker images
+      run: |
+        docker build -t ovncp-api:scan .
+        docker build -t ovncp-web:scan ./web
+    
+    # Trivy scanner
+    - name: Run Trivy on API image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'ovncp-api:scan'
+        format: 'sarif'
+        output: 'trivy-api.sarif'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '1'
+    
+    - name: Upload API Trivy results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-api.sarif'
+        category: 'trivy-api'
+    
+    - name: Run Trivy on Web image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'ovncp-web:scan'
+        format: 'sarif'
+        output: 'trivy-web.sarif'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '1'
+    
+    - name: Upload Web Trivy results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-web.sarif'
+        category: 'trivy-web'
+    
+    # Dockerfile linting
+    - name: Lint Dockerfiles
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        recursive: true
+        dockerfile: "**/Dockerfile*"
+
+  # Secret scanning
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    # GitLeaks
+    - name: Run Gitleaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    # TruffleHog
+    - name: TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --debug --only-verified
+
+  # Infrastructure as Code scanning
+  iac-scan:
+    name: IaC Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Checkov for Kubernetes manifests
+    - name: Run Checkov
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: .
+        framework: kubernetes,helm,dockerfile
+        output_format: sarif
+        output_file_path: checkov.sarif
+    
+    - name: Upload Checkov results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: checkov.sarif
+        category: checkov
+    
+    # Kubesec for Kubernetes security
+    - name: Run Kubesec
+      run: |
+        find . -name "*.yaml" -o -name "*.yml" | \
+        grep -E "(deploy|deployment|pod|statefulset|daemonset)" | \
+        xargs -I {} sh -c 'echo "Scanning {}" && \
+        docker run -v $(pwd):/app kubesec/kubesec:latest scan /app/{}'
+
+  # OWASP Dependency Check
+  owasp-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'ovncp'
+        path: '.'
+        format: 'ALL'
+        args: >
+          --enableRetired
+          --enableExperimental
+    
+    - name: Upload OWASP results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: reports/dependency-check-report.sarif
+        category: owasp
+
+  # Security policy compliance
+  compliance-check:
+    name: Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check security headers
+      run: |
+        echo "Checking for security headers implementation..."
+        grep -r "X-Frame-Options\|X-Content-Type-Options\|X-XSS-Protection\|Strict-Transport-Security" . || echo "Warning: Security headers might be missing"
+    
+    - name: Check for sensitive data patterns
+      run: |
+        echo "Checking for hardcoded secrets..."
+        ! grep -rE "(password|secret|key)\s*=\s*['\"][^'\"]+['\"]" --include="*.go" --include="*.js" --include="*.ts" . || echo "Warning: Potential hardcoded secrets found"
+    
+    - name: Verify HTTPS enforcement
+      run: |
+        echo "Checking for HTTPS enforcement..."
+        grep -r "http://" . --include="*.go" --include="*.js" --include="*.ts" | grep -v "localhost\|127.0.0.1\|test" || echo "Good: No insecure HTTP found"
+
+  # Generate security report
+  security-report:
+    name: Security Report
+    runs-on: ubuntu-latest
+    needs: [sast, dependency-scan, container-scan, secret-scan, iac-scan, owasp-check]
+    if: always()
+    
+    steps:
+    - name: Generate Summary
+      run: |
+        echo "# Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "- SAST: ${{ needs.sast.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Dependency Scan: ${{ needs.dependency-scan.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Container Scan: ${{ needs.container-scan.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Secret Scan: ${{ needs.secret-scan.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- IaC Scan: ${{ needs.iac-scan.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- OWASP Check: ${{ needs.owasp-check.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Generated at: $(date -u)" >> $GITHUB_STEP_SUMMARY

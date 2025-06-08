@@ -1,0 +1,1443 @@
+openapi: 3.0.3
+info:
+  title: OVN Control Platform API
+  description: |
+    The OVN Control Platform provides a RESTful API for managing Open Virtual Network (OVN) resources.
+    
+    ## Features
+    - Manage logical switches, routers, and ports
+    - Configure ACLs and load balancers
+    - Execute atomic transactions
+    - Monitor resource health and metrics
+    
+    ## Authentication
+    All API endpoints require authentication using JWT tokens. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Rate Limiting
+    API requests are rate limited. Check the following headers in responses:
+    - `X-RateLimit-Limit`: Maximum requests per second
+    - `X-RateLimit-Remaining`: Remaining requests in current window
+    - `X-RateLimit-Reset`: Time when the rate limit resets
+  version: 1.0.0
+  contact:
+    name: OVN Control Platform Team
+    email: support@ovncp.example.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: https://api.ovncp.example.com/api/v1
+    description: Production server
+  - url: https://staging-api.ovncp.example.com/api/v1
+    description: Staging server
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: Authentication and authorization operations
+  - name: Logical Switches
+    description: Manage OVN logical switches
+  - name: Logical Routers
+    description: Manage OVN logical routers
+  - name: Logical Ports
+    description: Manage OVN logical switch and router ports
+  - name: ACLs
+    description: Manage Access Control Lists
+  - name: Load Balancers
+    description: Manage load balancer configurations
+  - name: Transactions
+    description: Execute atomic OVN transactions
+  - name: Monitoring
+    description: Health checks and metrics
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login with OAuth provider
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - code
+              properties:
+                provider:
+                  type: string
+                  enum: [github, google, oidc]
+                  description: OAuth provider name
+                code:
+                  type: string
+                  description: OAuth authorization code
+                state:
+                  type: string
+                  description: OAuth state parameter
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh authentication token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: Refresh token from previous login
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /switches:
+    get:
+      tags:
+        - Logical Switches
+      summary: List all logical switches
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortParam'
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Filter by switch name (supports wildcards)
+      responses:
+        '200':
+          description: List of logical switches
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LogicalSwitch'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    
+    post:
+      tags:
+        - Logical Switches
+      summary: Create a new logical switch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLogicalSwitch'
+      responses:
+        '201':
+          description: Logical switch created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalSwitch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /switches/{switchId}:
+    get:
+      tags:
+        - Logical Switches
+      summary: Get a logical switch by ID
+      parameters:
+        - $ref: '#/components/parameters/SwitchId'
+      responses:
+        '200':
+          description: Logical switch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalSwitch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags:
+        - Logical Switches
+      summary: Update a logical switch
+      parameters:
+        - $ref: '#/components/parameters/SwitchId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLogicalSwitch'
+      responses:
+        '200':
+          description: Logical switch updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalSwitch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    delete:
+      tags:
+        - Logical Switches
+      summary: Delete a logical switch
+      parameters:
+        - $ref: '#/components/parameters/SwitchId'
+      responses:
+        '204':
+          description: Logical switch deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /switches/{switchId}/ports:
+    get:
+      tags:
+        - Logical Ports
+      summary: List ports on a logical switch
+      parameters:
+        - $ref: '#/components/parameters/SwitchId'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: List of ports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LogicalPort'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    post:
+      tags:
+        - Logical Ports
+      summary: Create a port on a logical switch
+      parameters:
+        - $ref: '#/components/parameters/SwitchId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLogicalPort'
+      responses:
+        '201':
+          description: Port created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalPort'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /routers:
+    get:
+      tags:
+        - Logical Routers
+      summary: List all logical routers
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortParam'
+      responses:
+        '200':
+          description: List of logical routers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LogicalRouter'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    
+    post:
+      tags:
+        - Logical Routers
+      summary: Create a new logical router
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLogicalRouter'
+      responses:
+        '201':
+          description: Logical router created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalRouter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /routers/{routerId}:
+    get:
+      tags:
+        - Logical Routers
+      summary: Get a logical router by ID
+      parameters:
+        - $ref: '#/components/parameters/RouterId'
+      responses:
+        '200':
+          description: Logical router details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalRouter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags:
+        - Logical Routers
+      summary: Update a logical router
+      parameters:
+        - $ref: '#/components/parameters/RouterId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLogicalRouter'
+      responses:
+        '200':
+          description: Logical router updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalRouter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    delete:
+      tags:
+        - Logical Routers
+      summary: Delete a logical router
+      parameters:
+        - $ref: '#/components/parameters/RouterId'
+      responses:
+        '204':
+          description: Logical router deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ports/{portId}:
+    get:
+      tags:
+        - Logical Ports
+      summary: Get a port by ID
+      parameters:
+        - $ref: '#/components/parameters/PortId'
+      responses:
+        '200':
+          description: Port details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalPort'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags:
+        - Logical Ports
+      summary: Update a port
+      parameters:
+        - $ref: '#/components/parameters/PortId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLogicalPort'
+      responses:
+        '200':
+          description: Port updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogicalPort'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    delete:
+      tags:
+        - Logical Ports
+      summary: Delete a port
+      parameters:
+        - $ref: '#/components/parameters/PortId'
+      responses:
+        '204':
+          description: Port deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /acls:
+    get:
+      tags:
+        - ACLs
+      summary: List all ACLs
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [from-lport, to-lport]
+          description: Filter by ACL direction
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [allow, allow-related, drop, reject]
+          description: Filter by ACL action
+      responses:
+        '200':
+          description: List of ACLs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ACL'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    
+    post:
+      tags:
+        - ACLs
+      summary: Create a new ACL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateACL'
+      responses:
+        '201':
+          description: ACL created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ACL'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /acls/{aclId}:
+    get:
+      tags:
+        - ACLs
+      summary: Get an ACL by ID
+      parameters:
+        - $ref: '#/components/parameters/ACLId'
+      responses:
+        '200':
+          description: ACL details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ACL'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags:
+        - ACLs
+      summary: Update an ACL
+      parameters:
+        - $ref: '#/components/parameters/ACLId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateACL'
+      responses:
+        '200':
+          description: ACL updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ACL'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    delete:
+      tags:
+        - ACLs
+      summary: Delete an ACL
+      parameters:
+        - $ref: '#/components/parameters/ACLId'
+      responses:
+        '204':
+          description: ACL deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /transactions:
+    post:
+      tags:
+        - Transactions
+      summary: Execute an atomic transaction
+      description: |
+        Execute multiple OVN operations atomically. All operations succeed or all fail.
+        
+        Supported operations:
+        - create_logical_switch
+        - update_logical_switch
+        - delete_logical_switch
+        - create_logical_router
+        - update_logical_router
+        - delete_logical_router
+        - create_logical_port
+        - update_logical_port
+        - delete_logical_port
+        - create_acl
+        - update_acl
+        - delete_acl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transaction'
+      responses:
+        '200':
+          description: Transaction executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Transaction conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionError'
+
+  /health:
+    get:
+      tags:
+        - Monitoring
+      summary: Health check endpoint
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  service:
+                    type: string
+                  version:
+                    type: string
+                  ovn_connected:
+                    type: boolean
+                  database_connected:
+                    type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /metrics:
+    get:
+      tags:
+        - Monitoring
+      summary: Prometheus metrics endpoint
+      security: []
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    SwitchId:
+      name: switchId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Logical switch UUID
+    
+    RouterId:
+      name: routerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Logical router UUID
+    
+    PortId:
+      name: portId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Logical port UUID
+    
+    ACLId:
+      name: aclId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: ACL UUID
+    
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number
+    
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Items per page
+    
+    SortParam:
+      name: sort
+      in: query
+      schema:
+        type: string
+        pattern: '^[a-zA-Z_]+:(asc|desc)$'
+        default: 'created_at:desc'
+      description: Sort field and order (e.g., name:asc)
+
+  schemas:
+    # Authentication schemas
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        refresh_token:
+          type: string
+          description: JWT refresh token
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+        user:
+          $ref: '#/components/schemas/User'
+    
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [admin, operator, viewer]
+        permissions:
+          type: array
+          items:
+            type: string
+    
+    # Logical Switch schemas
+    LogicalSwitch:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        subnet:
+          type: string
+          format: ipv4-cidr
+        dns_servers:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+        ports_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    CreateLogicalSwitch:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$'
+        description:
+          type: string
+          maxLength: 255
+        subnet:
+          type: string
+          format: ipv4-cidr
+        dns_servers:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+    
+    UpdateLogicalSwitch:
+      type: object
+      properties:
+        description:
+          type: string
+          maxLength: 255
+        dns_servers:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+    
+    # Logical Router schemas
+    LogicalRouter:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        external_gateway:
+          type: string
+          format: ipv4
+        static_routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaticRoute'
+        nat_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/NATRule'
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+        ports_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    CreateLogicalRouter:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$'
+        description:
+          type: string
+          maxLength: 255
+        external_gateway:
+          type: string
+          format: ipv4
+        static_routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaticRoute'
+        nat_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/NATRule'
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+    
+    UpdateLogicalRouter:
+      type: object
+      properties:
+        description:
+          type: string
+          maxLength: 255
+        external_gateway:
+          type: string
+          format: ipv4
+        static_routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaticRoute'
+        nat_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/NATRule'
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+    
+    StaticRoute:
+      type: object
+      required:
+        - destination
+        - next_hop
+      properties:
+        destination:
+          type: string
+          format: ipv4-cidr
+        next_hop:
+          type: string
+          format: ipv4
+        metric:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          default: 100
+    
+    NATRule:
+      type: object
+      required:
+        - type
+        - external_ip
+        - internal_ip
+      properties:
+        type:
+          type: string
+          enum: [snat, dnat]
+        external_ip:
+          type: string
+          format: ipv4
+        internal_ip:
+          type: string
+          format: ipv4
+        external_port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        internal_port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        protocol:
+          type: string
+          enum: [tcp, udp]
+    
+    # Logical Port schemas
+    LogicalPort:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [switch, router, patch, l2gateway, localnet, localport]
+        parent_uuid:
+          type: string
+          format: uuid
+        parent_type:
+          type: string
+          enum: [switch, router]
+        mac_address:
+          type: string
+          pattern: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'
+        ip_addresses:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        enabled:
+          type: boolean
+        security_groups:
+          type: array
+          items:
+            type: string
+            format: uuid
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    CreateLogicalPort:
+      type: object
+      required:
+        - name
+        - mac_address
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$'
+        type:
+          type: string
+          enum: [switch, router, patch, l2gateway, localnet, localport]
+          default: switch
+        mac_address:
+          type: string
+          pattern: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'
+        ip_addresses:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        enabled:
+          type: boolean
+          default: true
+        security_groups:
+          type: array
+          items:
+            type: string
+            format: uuid
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+    
+    UpdateLogicalPort:
+      type: object
+      properties:
+        ip_addresses:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        enabled:
+          type: boolean
+        security_groups:
+          type: array
+          items:
+            type: string
+            format: uuid
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+    
+    # ACL schemas
+    ACL:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 32767
+        direction:
+          type: string
+          enum: [from-lport, to-lport]
+        match:
+          type: string
+        action:
+          type: string
+          enum: [allow, allow-related, drop, reject]
+        log:
+          type: boolean
+        severity:
+          type: string
+          enum: [alert, warning, notice, info, debug]
+        meter:
+          type: string
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+        applied_to:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [switch, port, port-group]
+              uuid:
+                type: string
+                format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    CreateACL:
+      type: object
+      required:
+        - name
+        - priority
+        - direction
+        - match
+        - action
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 32767
+        direction:
+          type: string
+          enum: [from-lport, to-lport]
+        match:
+          type: string
+          minLength: 1
+        action:
+          type: string
+          enum: [allow, allow-related, drop, reject]
+        log:
+          type: boolean
+          default: false
+        severity:
+          type: string
+          enum: [alert, warning, notice, info, debug]
+          default: info
+        meter:
+          type: string
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+        apply_to:
+          type: array
+          items:
+            type: object
+            required:
+              - type
+              - uuid
+            properties:
+              type:
+                type: string
+                enum: [switch, port, port-group]
+              uuid:
+                type: string
+                format: uuid
+    
+    UpdateACL:
+      type: object
+      properties:
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 32767
+        match:
+          type: string
+          minLength: 1
+        action:
+          type: string
+          enum: [allow, allow-related, drop, reject]
+        log:
+          type: boolean
+        severity:
+          type: string
+          enum: [alert, warning, notice, info, debug]
+        meter:
+          type: string
+        external_ids:
+          type: object
+          additionalProperties:
+            type: string
+    
+    # Transaction schemas
+    Transaction:
+      type: object
+      required:
+        - operations
+      properties:
+        operations:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/TransactionOperation'
+        dry_run:
+          type: boolean
+          default: false
+          description: Validate operations without executing
+    
+    TransactionOperation:
+      type: object
+      required:
+        - operation
+        - resource_type
+      properties:
+        operation:
+          type: string
+          enum: [create, update, delete]
+        resource_type:
+          type: string
+          enum: [logical_switch, logical_router, logical_port, acl]
+        resource_id:
+          type: string
+          format: uuid
+          description: Required for update and delete operations
+        data:
+          type: object
+          description: Resource data for create and update operations
+    
+    TransactionResult:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [success, partial, failed]
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              operation_index:
+                type: integer
+              status:
+                type: string
+                enum: [success, failed]
+              resource_id:
+                type: string
+                format: uuid
+              error:
+                type: string
+        duration_ms:
+          type: integer
+    
+    TransactionError:
+      type: object
+      properties:
+        error:
+          type: string
+        transaction_id:
+          type: string
+          format: uuid
+        failed_operation:
+          type: integer
+          description: Index of the operation that caused the failure
+        details:
+          type: object
+    
+    # Common schemas
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+    
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+        request_id:
+          type: string
+          format: uuid
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: validation_error
+            message: Invalid request parameters
+            details:
+              field: name
+              reason: Name must be alphanumeric
+    
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: unauthorized
+            message: Authentication required
+    
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: forbidden
+            message: Insufficient permissions for this operation
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: not_found
+            message: Resource not found
+    
+    Conflict:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: conflict
+            message: Resource with this name already exists
+    
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Request limit per second
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time when rate limit resets (Unix timestamp)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: rate_limit_exceeded
+            message: Too many requests, please retry later

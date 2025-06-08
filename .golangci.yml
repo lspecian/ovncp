@@ -1,0 +1,255 @@
+# golangci-lint configuration
+# https://golangci-lint.run/usage/configuration/
+
+run:
+  # Timeout for analysis
+  timeout: 5m
+  
+  # Include test files
+  tests: true
+  
+  # List of build tags
+  build-tags:
+    - integration
+    - e2e
+  
+  # Skip directories
+  skip-dirs:
+    - vendor
+    - third_party
+    - testdata
+    - examples
+    - docs
+  
+  # Skip files
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.gen\\.go$"
+
+linters:
+  enable:
+    # Default linters
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    
+    # Additional linters
+    - bodyclose
+    - dogsled
+    - dupl
+    - exportloopref
+    - exhaustive
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - lll
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - prealloc
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - stylecheck
+    - unconvert
+    - unparam
+    - whitespace
+  
+  disable:
+    # Disabled linters
+    - depguard
+    - funlen
+    - gochecknoglobals
+    - gocognit
+    - godot
+    - godox
+    - goerr113
+    - golint
+    - interfacer
+    - maligned
+    - nestif
+    - testpackage
+    - wsl
+
+linters-settings:
+  # errcheck
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  
+  # govet
+  govet:
+    check-shadowing: true
+    enable-all: true
+  
+  # gocyclo
+  gocyclo:
+    min-complexity: 15
+  
+  # dupl
+  dupl:
+    threshold: 100
+  
+  # goconst
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  
+  # misspell
+  misspell:
+    locale: US
+  
+  # lll
+  lll:
+    line-length: 120
+    tab-width: 1
+  
+  # unparam
+  unparam:
+    check-exported: false
+  
+  # nakedret
+  nakedret:
+    max-func-lines: 30
+  
+  # prealloc
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+  
+  # gocritic
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+  
+  # gosec
+  gosec:
+    excludes:
+      - G104 # Audit errors not checked
+      - G204 # Audit use of command execution
+  
+  # goimports
+  goimports:
+    local-prefixes: github.com/lspecian/ovncp
+  
+  # gofmt
+  gofmt:
+    simplify: true
+  
+  # revive
+  revive:
+    ignoreGeneratedHeader: true
+    severity: warning
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+  
+  # gomnd
+  gomnd:
+    settings:
+      mnd:
+        # Don't include the "operation" and "assign"
+        checks: argument,case,condition,return
+        ignored-numbers: 0,1,2,3,4,5,10,100,1000
+        ignored-files: ".*_test\\.go$"
+        ignored-functions: "strconv\\..*,math\\..*,http\\.StatusText"
+
+issues:
+  # Excluding configuration
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - gomnd
+    
+    # Exclude known issues in generated files
+    - path: ".*\\.gen\\.go$"
+      linters:
+        - all
+    
+    # Exclude lll issues for long lines with URLs
+    - linters:
+        - lll
+      source: "https://"
+    
+    # Exclude certain revive rules in test files
+    - path: _test\.go
+      linters:
+        - revive
+      text: "^(var-naming|exported):"
+  
+  # Maximum issues count per one linter
+  max-issues-per-linter: 50
+  
+  # Maximum count of issues with the same text
+  max-same-issues: 10
+  
+  # Show only new issues
+  new: false
+  
+  # Fix found issues (if it's supported by the linter)
+  fix: false
+
+severity:
+  # Default value is empty string.
+  # Set the default severity for issues
+  default-severity: warning
+  
+  # The default value is false.
+  # If set to true severity-rules regular expressions become case sensitive
+  case-sensitive: false
+  
+  # Default value is empty list.
+  # When a list of severity rules are provided, severity information will be added to lint
+  rules:
+    - linters:
+        - dupl
+      severity: info

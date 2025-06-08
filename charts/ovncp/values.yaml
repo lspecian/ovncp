@@ -1,0 +1,257 @@
+# Default values for ovncp.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  # -- Override the name
+  nameOverride: ""
+  # -- Override the fullname
+  fullnameOverride: ""
+
+# API Backend configuration
+api:
+  # -- Number of API replicas
+  replicaCount: 2
+  
+  image:
+    # -- API image repository
+    repository: ovncp/api
+    # -- API image pull policy
+    pullPolicy: IfNotPresent
+    # -- API image tag (defaults to chart appVersion)
+    tag: ""
+  
+  # -- API service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+  
+  # -- API resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # -- API autoscaling configuration
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  
+  # -- API pod security context
+  podSecurityContext:
+    fsGroup: 1000
+    runAsNonRoot: true
+    runAsUser: 1000
+  
+  # -- API container security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+  
+  # -- API configuration
+  config:
+    # -- Enable authentication
+    authEnabled: true
+    # -- JWT secret (generate a secure random string)
+    jwtSecret: ""
+    # -- Log level
+    logLevel: "info"
+    # -- Log format
+    logFormat: "json"
+
+# Web Frontend configuration
+web:
+  # -- Number of web replicas
+  replicaCount: 2
+  
+  image:
+    # -- Web image repository
+    repository: ovncp/web
+    # -- Web image pull policy
+    pullPolicy: IfNotPresent
+    # -- Web image tag (defaults to chart appVersion)
+    tag: ""
+  
+  # -- Web service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+  
+  # -- Web resource limits and requests
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  
+  # -- Web autoscaling configuration
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  
+  # -- Web pod security context
+  podSecurityContext:
+    fsGroup: 1000
+    runAsNonRoot: true
+    runAsUser: 1000
+  
+  # -- Web container security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+
+# OVN configuration
+ovn:
+  # -- OVN Northbound database connection string
+  northboundDB: "tcp:ovn-northbound:6641"
+  # -- OVN Southbound database connection string
+  southboundDB: "tcp:ovn-southbound:6642"
+  # -- OVN connection timeout
+  timeout: "30s"
+  # -- OVN max retries
+  maxRetries: 3
+
+# OAuth providers configuration
+oauth:
+  # -- GitHub OAuth configuration
+  github:
+    enabled: false
+    clientId: ""
+    clientSecret: ""
+    redirectUrl: ""
+  
+  # -- Google OAuth configuration
+  google:
+    enabled: false
+    clientId: ""
+    clientSecret: ""
+    redirectUrl: ""
+  
+  # -- Generic OIDC configuration
+  oidc:
+    enabled: false
+    clientId: ""
+    clientSecret: ""
+    redirectUrl: ""
+    issuerUrl: ""
+    scopes: "openid,email,profile"
+
+# PostgreSQL configuration
+postgresql:
+  # -- Enable PostgreSQL chart
+  enabled: true
+  # -- PostgreSQL authentication
+  auth:
+    username: ovncp
+    password: ovncp_password
+    database: ovncp
+  # -- PostgreSQL primary configuration
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+# External database configuration (if postgresql.enabled is false)
+externalDatabase:
+  # -- External database host
+  host: ""
+  # -- External database port
+  port: 5432
+  # -- External database name
+  database: ovncp
+  # -- External database username
+  username: ovncp
+  # -- External database password
+  password: ""
+  # -- External database SSL mode
+  sslMode: "require"
+
+# Ingress configuration
+ingress:
+  # -- Enable ingress
+  enabled: true
+  # -- Ingress class name
+  className: "nginx"
+  # -- Ingress annotations
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  # -- Ingress hosts
+  hosts:
+    - host: ovncp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: web
+        - path: /api
+          pathType: Prefix
+          service: api
+  # -- Ingress TLS configuration
+  tls:
+    - secretName: ovncp-tls
+      hosts:
+        - ovncp.example.com
+
+# ServiceAccount configuration
+serviceAccount:
+  # -- Create service account
+  create: true
+  # -- Service account annotations
+  annotations: {}
+  # -- Service account name
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod disruption budget
+podDisruptionBudget:
+  # -- Enable PodDisruptionBudget
+  enabled: true
+  # -- Minimum available pods
+  minAvailable: 1
+
+# Network policies
+networkPolicy:
+  # -- Enable network policies
+  enabled: false
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Extra environment variables for API
+extraEnvVars: []
+# - name: EXTRA_VAR
+#   value: "extra-value"
+
+# Extra secrets
+extraSecrets: []
+# - name: extra-secret
+#   data:
+#     key: value

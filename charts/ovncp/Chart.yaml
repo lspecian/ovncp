@@ -1,0 +1,22 @@
+apiVersion: v2
+name: ovncp
+description: OVN Control Platform - Modern REST API for Open Virtual Network management
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - ovn
+  - sdn
+  - networking
+  - api
+home: https://github.com/lspecian/ovncp
+sources:
+  - https://github.com/lspecian/ovncp
+maintainers:
+  - name: lspecian
+    email: lspecian@example.com
+dependencies:
+  - name: postgresql
+    version: "13.2.24"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled

@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ovncp-postgres
+    environment:
+      POSTGRES_DB: ovncp
+      POSTGRES_USER: ovncp
+      POSTGRES_PASSWORD: ovncp_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ovncp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # OVN Northbound Database (development/testing)
+  ovn-northbound:
+    image: ovn-org/ovn-nb:latest
+    container_name: ovncp-ovn-nb
+    ports:
+      - "6641:6641"
+    volumes:
+      - ovn_nb_data:/var/lib/ovn
+    command: ["ovsdb-server", "--remote=ptcp:6641", "/etc/ovn/ovnnb_db.db"]
+
+  # API Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ovncp-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # API Configuration
+      API_PORT: "8080"
+      API_HOST: "0.0.0.0"
+      
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ovncp
+      DB_USER: ovncp
+      DB_PASSWORD: ovncp_password
+      DB_SSL_MODE: disable
+      
+      # OVN Configuration
+      OVN_NORTHBOUND_DB: "tcp:ovn-northbound:6641"
+      
+      # Auth Configuration
+      AUTH_ENABLED: "true"
+      JWT_SECRET: "your-secret-key-change-in-production"
+      
+      # OAuth Providers (configure as needed)
+      OAUTH_GITHUB_CLIENT_ID: ${OAUTH_GITHUB_CLIENT_ID:-}
+      OAUTH_GITHUB_CLIENT_SECRET: ${OAUTH_GITHUB_CLIENT_SECRET:-}
+      OAUTH_GITHUB_REDIRECT_URL: "http://localhost:3000/auth/callback/github"
+      
+      OAUTH_GOOGLE_CLIENT_ID: ${OAUTH_GOOGLE_CLIENT_ID:-}
+      OAUTH_GOOGLE_CLIENT_SECRET: ${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      OAUTH_GOOGLE_REDIRECT_URL: "http://localhost:3000/auth/callback/google"
+      
+      # Logging
+      LOG_LEVEL: "debug"
+      LOG_FORMAT: "json"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./migrations:/app/migrations:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Web Frontend
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: ovncp-web
+    depends_on:
+      - api
+    ports:
+      - "3000:8080"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  ovn_nb_data:

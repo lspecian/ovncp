@@ -1,0 +1,273 @@
+groups:
+  - name: ovncp_availability
+    interval: 30s
+    rules:
+      # API availability alerts
+      - alert: OVNCPAPIDown
+        expr: up{job="ovncp-api"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: ovncp
+          component: api
+        annotations:
+          summary: "OVN Control Platform API is down"
+          description: "The OVN Control Platform API service {{ $labels.instance }} has been down for more than 5 minutes."
+          runbook_url: "https://docs.ovncp.io/runbooks/api-down"
+
+      - alert: OVNCPWebDown
+        expr: up{job="ovncp-web"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: ovncp
+          component: web
+        annotations:
+          summary: "OVN Control Platform Web UI is down"
+          description: "The OVN Control Platform Web UI service {{ $labels.instance }} has been down for more than 5 minutes."
+
+      # OVN connection alerts
+      - alert: OVNConnectionLost
+        expr: ovncp_ovn_connection_status == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: ovncp
+          component: ovn
+        annotations:
+          summary: "OVN connection lost"
+          description: "Connection to OVN {{ $labels.component }} has been lost for more than 2 minutes."
+
+      # Database connection alerts
+      - alert: DatabaseConnectionPoolExhausted
+        expr: ovncp_db_connections_idle == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: ovncp
+          component: database
+        annotations:
+          summary: "Database connection pool exhausted"
+          description: "No idle database connections available for more than 5 minutes. Current active connections: {{ $value }}."
+
+  - name: ovncp_performance
+    interval: 30s
+    rules:
+      # High latency alerts
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(ovncp_http_request_duration_seconds_bucket[5m])) by (endpoint, le)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          service: ovncp
+          component: api
+        annotations:
+          summary: "High API latency detected"
+          description: "P95 latency for endpoint {{ $labels.endpoint }} is {{ $value }}s (threshold: 1s)."
+
+      - alert: VeryHighAPILatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(ovncp_http_request_duration_seconds_bucket[5m])) by (endpoint, le)
+          ) > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: ovncp
+          component: api
+        annotations:
+          summary: "Very high API latency detected"
+          description: "P95 latency for endpoint {{ $labels.endpoint }} is {{ $value }}s (threshold: 5s)."
+
+      # OVN operation latency
+      - alert: HighOVNOperationLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ovncp_ovn_operation_duration_seconds_bucket[5m])) by (operation, le)
+          ) > 2
+        for: 10m
+        labels:
+          severity: warning
+          service: ovncp
+          component: ovn
+        annotations:
+          summary: "High OVN operation latency"
+          description: "P95 latency for OVN operation {{ $labels.operation }} is {{ $value }}s (threshold: 2s)."
+
+  - name: ovncp_errors
+    interval: 30s
+    rules:
+      # Error rate alerts
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(ovncp_http_requests_total{status=~"5.."}[5m])) by (endpoint)
+          /
+          sum(rate(ovncp_http_requests_total[5m])) by (endpoint)
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: ovncp
+          component: api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate for endpoint {{ $labels.endpoint }} is {{ $value | humanizePercentage }} (threshold: 5%)."
+
+      - alert: VeryHighErrorRate
+        expr: |
+          sum(rate(ovncp_http_requests_total{status=~"5.."}[5m])) by (endpoint)
+          /
+          sum(rate(ovncp_http_requests_total[5m])) by (endpoint)
+          > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: ovncp
+          component: api
+        annotations:
+          summary: "Very high error rate detected"
+          description: "Error rate for endpoint {{ $labels.endpoint }} is {{ $value | humanizePercentage }} (threshold: 10%)."
+
+      # OVN operation failures
+      - alert: OVNOperationFailures
+        expr: |
+          sum(rate(ovncp_ovn_operations_total{status="error"}[5m])) by (operation, resource)
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: ovncp
+          component: ovn
+        annotations:
+          summary: "OVN operation failures detected"
+          description: "OVN {{ $labels.operation }} operations on {{ $labels.resource }} are failing at {{ $value }} ops/sec."
+
+      # Panic alerts
+      - alert: PanicsDetected
+        expr: increase(ovncp_panics_total[5m]) > 0
+        labels:
+          severity: critical
+          service: ovncp
+          component: api
+        annotations:
+          summary: "Panic detected in OVN Control Platform"
+          description: "{{ $value }} panic(s) detected in the last 5 minutes."
+
+  - name: ovncp_resources
+    interval: 1m
+    rules:
+      # Memory usage alerts
+      - alert: HighMemoryUsage
+        expr: ovncp_memory_usage_bytes > 1073741824  # 1GB
+        for: 10m
+        labels:
+          severity: warning
+          service: ovncp
+          component: api
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanize1024 }}B (threshold: 1GB)."
+
+      - alert: VeryHighMemoryUsage
+        expr: ovncp_memory_usage_bytes > 2147483648  # 2GB
+        for: 5m
+        labels:
+          severity: critical
+          service: ovncp
+          component: api
+        annotations:
+          summary: "Very high memory usage detected"
+          description: "Memory usage is {{ $value | humanize1024 }}B (threshold: 2GB)."
+
+      # Goroutine leaks
+      - alert: GoroutineLeak
+        expr: ovncp_goroutines_count > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: ovncp
+          component: api
+        annotations:
+          summary: "Possible goroutine leak detected"
+          description: "Number of goroutines is {{ $value }} (threshold: 1000)."
+
+  - name: ovncp_business
+    interval: 1m
+    rules:
+      # Sudden drop in resources
+      - alert: LogicalSwitchCountDrop
+        expr: |
+          (ovncp_logical_switches_total - ovncp_logical_switches_total offset 10m)
+          / ovncp_logical_switches_total offset 10m
+          < -0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: ovncp
+          component: business
+        annotations:
+          summary: "Significant drop in logical switches"
+          description: "Logical switch count dropped by {{ $value | humanizePercentage }} in the last 10 minutes."
+
+      # Transaction failures
+      - alert: HighTransactionFailureRate
+        expr: |
+          sum(rate(ovncp_transactions_total{status!="success"}[5m]))
+          /
+          sum(rate(ovncp_transactions_total[5m]))
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: ovncp
+          component: api
+        annotations:
+          summary: "High transaction failure rate"
+          description: "Transaction failure rate is {{ $value | humanizePercentage }} (threshold: 10%)."
+
+  - name: ovncp_slo
+    interval: 30s
+    rules:
+      # SLO: 99.9% availability
+      - alert: SLOAvailabilityBreach
+        expr: |
+          avg_over_time(up{job=~"ovncp-.*"}[30m]) < 0.999
+        labels:
+          severity: critical
+          service: ovncp
+          slo: availability
+        annotations:
+          summary: "SLO availability breach"
+          description: "Service availability is {{ $value | humanizePercentage }} over the last 30 minutes (SLO: 99.9%)."
+
+      # SLO: 95% of requests under 500ms
+      - alert: SLOLatencyBreach
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ovncp_http_request_duration_seconds_bucket[30m])) by (le)
+          ) > 0.5
+        labels:
+          severity: warning
+          service: ovncp
+          slo: latency
+        annotations:
+          summary: "SLO latency breach"
+          description: "P95 latency is {{ $value }}s over the last 30 minutes (SLO: 500ms)."
+
+      # SLO: Error rate < 1%
+      - alert: SLOErrorRateBreach
+        expr: |
+          sum(rate(ovncp_http_requests_total{status=~"5.."}[30m]))
+          /
+          sum(rate(ovncp_http_requests_total[30m]))
+          > 0.01
+        labels:
+          severity: warning
+          service: ovncp
+          slo: error_rate
+        annotations:
+          summary: "SLO error rate breach"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 30 minutes (SLO: < 1%)."
