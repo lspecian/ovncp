@@ -57,8 +57,8 @@ jobs:
     - name: Run tests
       run: |
         echo "Go version: $(go version)"
-        echo "Running unit tests (excluding integration and e2e)..."
-        go test -v -race -coverprofile=coverage.out $(go list ./... | grep -v /test/)
+        echo "Running unit tests..."
+        go test -v -race -coverprofile=coverage.out ./cmd/... ./internal/... ./pkg/...
       env:
         DB_TYPE: sqlite
         DB_NAME: ":memory:"
