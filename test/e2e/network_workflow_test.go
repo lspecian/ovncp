@@ -67,7 +67,7 @@ func TestE2E_CreateNetworkTopology(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Wait for app to load
-		err = page.WaitForSelector("[data-testid='dashboard']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='dashboard']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(10000),
 		})
 		require.NoError(t, err)
@@ -95,13 +95,13 @@ func TestE2E_CreateNetworkTopology(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Wait for success notification
-		err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
 		
 		// Verify switch appears in list
-		err = page.WaitForSelector(fmt.Sprintf("text=%s", switchName1), playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector(fmt.Sprintf("text=%s", switchName1), playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestE2E_CreateNetworkTopology(t *testing.T) {
 		err = page.Click("[data-testid='submit-btn']")
 		require.NoError(t, err)
 		
-		err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -150,7 +150,7 @@ func TestE2E_CreateNetworkTopology(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Wait for success
-		err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -163,7 +163,7 @@ func TestE2E_CreateNetworkTopology(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Wait for topology to load
-		err = page.WaitForSelector("[data-testid='network-topology']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='network-topology']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(10000),
 		})
 		require.NoError(t, err)
@@ -176,17 +176,17 @@ func TestE2E_CreateNetworkTopology(t *testing.T) {
 		assert.NoError(t, err)
 		
 		// Verify all components are visible
-		err = page.WaitForSelector(fmt.Sprintf("[data-testid='node-switch-%s']", switchName1), playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector(fmt.Sprintf("[data-testid='node-switch-%s']", switchName1), playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
 		
-		err = page.WaitForSelector(fmt.Sprintf("[data-testid='node-switch-%s']", switchName2), playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector(fmt.Sprintf("[data-testid='node-switch-%s']", switchName2), playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
 		
-		err = page.WaitForSelector(fmt.Sprintf("[data-testid='node-router-%s']", routerName), playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector(fmt.Sprintf("[data-testid='node-router-%s']", routerName), playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -218,7 +218,7 @@ func TestE2E_CreateNetworkTopology(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Wait for connection to appear
-		err = page.WaitForSelector("[data-testid='connection-line']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='connection-line']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -358,7 +358,7 @@ func TestE2E_AuthenticationFlow(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Verify logged in
-		err = page.WaitForSelector("[data-testid='user-menu']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='user-menu']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -406,7 +406,7 @@ func TestE2E_ErrorHandling(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Wait for success
-		err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -422,7 +422,7 @@ func TestE2E_ErrorHandling(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Should show error
-		err = page.WaitForSelector("[data-testid='error-notification']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='error-notification']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -449,7 +449,7 @@ func TestE2E_ErrorHandling(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Should show network error
-		err = page.WaitForSelector("[data-testid='network-error']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='network-error']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -463,7 +463,7 @@ func TestE2E_ErrorHandling(t *testing.T) {
 		require.NoError(t, err)
 		
 		// Should succeed now
-		err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
+		_, err = page.WaitForSelector("[data-testid='success-notification']", playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(5000),
 		})
 		require.NoError(t, err)
@@ -515,7 +515,7 @@ func TestE2E_ResponsiveDesign(t *testing.T) {
 			// Check mobile menu
 			if vp.mobile {
 				// Mobile menu should be visible
-				err = page.WaitForSelector("[data-testid='mobile-menu-btn']", playwright.PageWaitForSelectorOptions{
+				_, err = page.WaitForSelector("[data-testid='mobile-menu-btn']", playwright.PageWaitForSelectorOptions{
 					Timeout: playwright.Float(5000),
 				})
 				require.NoError(t, err)
@@ -525,13 +525,13 @@ func TestE2E_ResponsiveDesign(t *testing.T) {
 				require.NoError(t, err)
 				
 				// Navigation should be in drawer
-				err = page.WaitForSelector("[data-testid='mobile-nav-drawer']", playwright.PageWaitForSelectorOptions{
+				_, err = page.WaitForSelector("[data-testid='mobile-nav-drawer']", playwright.PageWaitForSelectorOptions{
 					Timeout: playwright.Float(5000),
 				})
 				require.NoError(t, err)
 			} else {
 				// Desktop navigation should be visible
-				err = page.WaitForSelector("[data-testid='desktop-nav']", playwright.PageWaitForSelectorOptions{
+				_, err = page.WaitForSelector("[data-testid='desktop-nav']", playwright.PageWaitForSelectorOptions{
 					Timeout: playwright.Float(5000),
 				})
 				require.NoError(t, err)

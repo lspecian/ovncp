@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/lspecian/ovncp/internal/config"
 	"github.com/lspecian/ovncp/pkg/ovn"
 )
 
@@ -31,12 +32,10 @@ func getEnv(key, defaultValue string) string {
 }
 
 func setupOVNClient(t *testing.T) *ovn.Client {
-	cfg := ovn.Config{
-		NorthboundAddr: ovnNBAddr,
-		SouthboundAddr: ovnSBAddr,
-		Timeout:        30 * time.Second,
-		MaxRetries:     3,
-		RetryInterval:  1 * time.Second,
+	cfg := &config.OVNConfig{
+		NorthboundDB: ovnNBAddr,
+		SouthboundDB: ovnSBAddr,
+		Timeout:      30 * time.Second,
 	}
 	
 	client, err := ovn.NewClient(cfg)
@@ -47,7 +46,7 @@ func setupOVNClient(t *testing.T) *ovn.Client {
 	require.NoError(t, err)
 	
 	t.Cleanup(func() {
-		client.Disconnect()
+		// client.Disconnect() // Method doesn't exist
 	})
 	
 	return client
