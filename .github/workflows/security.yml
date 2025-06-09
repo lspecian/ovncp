@@ -10,7 +10,12 @@ on:
     - cron: '0 2 * * *'
 
 env:
-  GO_VERSION: '1.22'
+  GO_VERSION: '1.23'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 
 jobs:
   # Static Application Security Testing (SAST)
