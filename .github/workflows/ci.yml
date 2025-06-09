@@ -52,12 +52,15 @@ jobs:
     
     - name: Download dependencies
       run: go mod download
+      env:
+        GOTOOLCHAIN: local
     
     - name: Run tests
       run: go test -v -race -coverprofile=coverage.out ./...
       env:
         DB_TYPE: sqlite
         DB_NAME: ":memory:"
+        GOTOOLCHAIN: local
     
     - name: Upload coverage
       uses: codecov/codecov-action@v4
