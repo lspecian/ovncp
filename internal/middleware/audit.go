@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -120,37 +121,37 @@ func (l *DatabaseAuditLogger) Query(filter AuditFilter) ([]*AuditEvent, error) {
 	
 	if filter.UserID != "" {
 		argCount++
-		query += " AND user_id = $" + string(argCount)
+		query += " AND user_id = $" + strconv.Itoa(argCount)
 		args = append(args, filter.UserID)
 	}
 	
 	if filter.ResourceType != "" {
 		argCount++
-		query += " AND resource_type = $" + string(argCount)
+		query += " AND resource_type = $" + strconv.Itoa(argCount)
 		args = append(args, filter.ResourceType)
 	}
 	
 	if filter.ResourceID != "" {
 		argCount++
-		query += " AND resource_id = $" + string(argCount)
+		query += " AND resource_id = $" + strconv.Itoa(argCount)
 		args = append(args, filter.ResourceID)
 	}
 	
 	if filter.Action != "" {
 		argCount++
-		query += " AND action = $" + string(argCount)
+		query += " AND action = $" + strconv.Itoa(argCount)
 		args = append(args, filter.Action)
 	}
 	
 	if !filter.StartTime.IsZero() {
 		argCount++
-		query += " AND timestamp >= $" + string(argCount)
+		query += " AND timestamp >= $" + strconv.Itoa(argCount)
 		args = append(args, filter.StartTime)
 	}
 	
 	if !filter.EndTime.IsZero() {
 		argCount++
-		query += " AND timestamp <= $" + string(argCount)
+		query += " AND timestamp <= $" + strconv.Itoa(argCount)
 		args = append(args, filter.EndTime)
 	}
 	
@@ -158,13 +159,13 @@ func (l *DatabaseAuditLogger) Query(filter AuditFilter) ([]*AuditEvent, error) {
 	
 	if filter.Limit > 0 {
 		argCount++
-		query += " LIMIT $" + string(argCount)
+		query += " LIMIT $" + strconv.Itoa(argCount)
 		args = append(args, filter.Limit)
 	}
 	
 	if filter.Offset > 0 {
 		argCount++
-		query += " OFFSET $" + string(argCount)
+		query += " OFFSET $" + strconv.Itoa(argCount)
 		args = append(args, filter.Offset)
 	}
 	

@@ -22,7 +22,8 @@ import (
 	"github.com/lspecian/ovncp/internal/config"
 	"github.com/lspecian/ovncp/internal/db"
 	"github.com/lspecian/ovncp/internal/ovn"
-	"github.com/lspecian/ovncp/internal/service"
+	"github.com/lspecian/ovncp/internal/models"
+	"github.com/lspecian/ovncp/internal/services"
 )
 
 func setupTestServer(t *testing.T) *httptest.Server {
@@ -71,7 +72,7 @@ func setupTestServer(t *testing.T) *httptest.Server {
 	require.NoError(t, err)
 	
 	// Initialize service
-	svc := service.NewService(ovnClient, database)
+	svc := models.NewService(ovnClient, database)
 	
 	// Initialize auth service (disabled)
 	authSvc := auth.NewAuthService(auth.Config{Enabled: false})

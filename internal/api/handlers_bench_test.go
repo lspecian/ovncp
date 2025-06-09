@@ -11,7 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/lspecian/ovncp/internal/auth"
-	"github.com/lspecian/ovncp/internal/service"
+	"github.com/lspecian/ovncp/internal/models"
+	"github.com/lspecian/ovncp/internal/services"
 )
 
 // Benchmark API handlers
@@ -20,9 +21,9 @@ func BenchmarkHandler_ListLogicalSwitches(b *testing.B) {
 	router := setupBenchmarkRouter(mockSvc)
 	
 	// Prepare test data
-	switches := make([]service.LogicalSwitch, 100)
+	switches := make([]*models.LogicalSwitch, 100)
 	for i := range switches {
-		switches[i] = service.LogicalSwitch{
+		switches[i] = &models.LogicalSwitch{
 			UUID:        uuid.New().String(),
 			Name:        "switch-" + string(rune(i)),
 			Description: "Benchmark switch",
@@ -50,13 +51,13 @@ func BenchmarkHandler_CreateLogicalSwitch(b *testing.B) {
 	router := setupBenchmarkRouter(mockSvc)
 	
 	mockSvc.On("CreateLogicalSwitch", "test-user-id", mock.Anything).
-		Return(&service.LogicalSwitch{
+		Return(&models.LogicalSwitch{
 			UUID:        uuid.New().String(),
 			Name:        "new-switch",
 			Description: "Created switch",
 		}, nil)
 	
-	reqBody := service.CreateLogicalSwitchRequest{
+	reqBody := models.LogicalSwitch{
 		Name:        "bench-switch",
 		Description: "Benchmark switch",
 	}
@@ -82,28 +83,28 @@ func BenchmarkHandler_GetNetworkTopology(b *testing.B) {
 	router := setupBenchmarkRouter(mockSvc)
 	
 	// Prepare topology data
-	topology := &service.NetworkTopology{
-		Switches: make([]service.LogicalSwitch, 50),
-		Routers:  make([]service.LogicalRouter, 10),
-		Ports:    make([]service.LogicalPort, 100),
+	topology := &services.Topology{
+		Switches: make([]*models.LogicalSwitch, 50),
+		Routers:  make([]*models.LogicalRouter, 10),
+		Ports:    make([]*models.LogicalSwitchPort, 100),
 	}
 	
 	for i := range topology.Switches {
-		topology.Switches[i] = service.LogicalSwitch{
+		topology.Switches[i] = &models.LogicalSwitch{
 			UUID: uuid.New().String(),
 			Name: "switch-" + string(rune(i)),
 		}
 	}
 	
 	for i := range topology.Routers {
-		topology.Routers[i] = service.LogicalRouter{
+		topology.Routers[i] = &models.LogicalRouter{
 			UUID: uuid.New().String(),
 			Name: "router-" + string(rune(i)),
 		}
 	}
 	
 	for i := range topology.Ports {
-		topology.Ports[i] = service.LogicalPort{
+		topology.Ports[i] = &models.LogicalSwitchPort{
 			UUID: uuid.New().String(),
 			Name: "port-" + string(rune(i)),
 		}
@@ -127,14 +128,14 @@ func BenchmarkHandler_GetNetworkTopology(b *testing.B) {
 
 // Benchmark JSON serialization/deserialization
 func BenchmarkJSON_Serialization(b *testing.B) {
-	topology := &service.NetworkTopology{
-		Switches: make([]service.LogicalSwitch, 50),
-		Routers:  make([]service.LogicalRouter, 10),
-		Ports:    make([]service.LogicalPort, 100),
+	topology := &services.Topology{
+		Switches: make([]*models.LogicalSwitch, 50),
+		Routers:  make([]*models.LogicalRouter, 10),
+		Ports:    make([]*models.LogicalSwitchPort, 100),
 	}
 	
 	for i := range topology.Switches {
-		topology.Switches[i] = service.LogicalSwitch{
+		topology.Switches[i] = &models.LogicalSwitch{
 			UUID:        uuid.New().String(),
 			Name:        "switch-" + string(rune(i)),
 			Description: "Test switch with a longer description for more realistic payload size",
@@ -152,14 +153,14 @@ func BenchmarkJSON_Serialization(b *testing.B) {
 }
 
 func BenchmarkJSON_Deserialization(b *testing.B) {
-	topology := &service.NetworkTopology{
-		Switches: make([]service.LogicalSwitch, 50),
-		Routers:  make([]service.LogicalRouter, 10),
-		Ports:    make([]service.LogicalPort, 100),
+	topology := &services.Topology{
+		Switches: make([]*models.LogicalSwitch, 50),
+		Routers:  make([]*models.LogicalRouter, 10),
+		Ports:    make([]*models.LogicalSwitchPort, 100),
 	}
 	
 	for i := range topology.Switches {
-		topology.Switches[i] = service.LogicalSwitch{
+		topology.Switches[i] = &models.LogicalSwitch{
 			UUID:        uuid.New().String(),
 			Name:        "switch-" + string(rune(i)),
 			Description: "Test switch with a longer description for more realistic payload size",
@@ -170,7 +171,7 @@ func BenchmarkJSON_Deserialization(b *testing.B) {
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		var result service.NetworkTopology
+		var result services.Topology
 		err := json.Unmarshal(data, &result)
 		if err != nil {
 			b.Fatal(err)

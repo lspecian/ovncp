@@ -12,7 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/lspecian/ovncp/internal/auth"
-	"github.com/lspecian/ovncp/internal/service"
+	"github.com/lspecian/ovncp/internal/models"
+	"github.com/lspecian/ovncp/internal/services"
 )
 
 // Mock service
@@ -20,33 +21,33 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m *mockService) ListLogicalSwitches(userID string) ([]service.LogicalSwitch, error) {
+func (m *mockService) ListLogicalSwitches(userID string) ([]*models.LogicalSwitch, error) {
 	args := m.Called(userID)
-	return args.Get(0).([]service.LogicalSwitch), args.Error(1)
+	return args.Get(0).([]*models.LogicalSwitch), args.Error(1)
 }
 
-func (m *mockService) GetLogicalSwitch(userID, id string) (*service.LogicalSwitch, error) {
+func (m *mockService) GetLogicalSwitch(userID, id string) (*models.LogicalSwitch, error) {
 	args := m.Called(userID, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*service.LogicalSwitch), args.Error(1)
+	return args.Get(0).(*models.LogicalSwitch), args.Error(1)
 }
 
-func (m *mockService) CreateLogicalSwitch(userID string, req service.CreateLogicalSwitchRequest) (*service.LogicalSwitch, error) {
+func (m *mockService) CreateLogicalSwitch(userID string, req models.CreateLogicalSwitchRequest) (*models.LogicalSwitch, error) {
 	args := m.Called(userID, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*service.LogicalSwitch), args.Error(1)
+	return args.Get(0).(*models.LogicalSwitch), args.Error(1)
 }
 
-func (m *mockService) UpdateLogicalSwitch(userID, id string, req service.UpdateLogicalSwitchRequest) (*service.LogicalSwitch, error) {
+func (m *mockService) UpdateLogicalSwitch(userID, id string, req models.UpdateLogicalSwitchRequest) (*models.LogicalSwitch, error) {
 	args := m.Called(userID, id, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*service.LogicalSwitch), args.Error(1)
+	return args.Get(0).(*models.LogicalSwitch), args.Error(1)
 }
 
 func (m *mockService) DeleteLogicalSwitch(userID, id string) error {
@@ -54,33 +55,33 @@ func (m *mockService) DeleteLogicalSwitch(userID, id string) error {
 	return args.Error(0)
 }
 
-func (m *mockService) ListLogicalRouters(userID string) ([]service.LogicalRouter, error) {
+func (m *mockService) ListLogicalRouters(userID string) ([]*models.LogicalRouter, error) {
 	args := m.Called(userID)
-	return args.Get(0).([]service.LogicalRouter), args.Error(1)
+	return args.Get(0).([]*models.LogicalRouter), args.Error(1)
 }
 
-func (m *mockService) GetLogicalRouter(userID, id string) (*service.LogicalRouter, error) {
+func (m *mockService) GetLogicalRouter(userID, id string) (*models.LogicalRouter, error) {
 	args := m.Called(userID, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*service.LogicalRouter), args.Error(1)
+	return args.Get(0).(*models.LogicalRouter), args.Error(1)
 }
 
-func (m *mockService) CreateLogicalRouter(userID string, req service.CreateLogicalRouterRequest) (*service.LogicalRouter, error) {
+func (m *mockService) CreateLogicalRouter(userID string, req models.CreateLogicalRouterRequest) (*models.LogicalRouter, error) {
 	args := m.Called(userID, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*service.LogicalRouter), args.Error(1)
+	return args.Get(0).(*models.LogicalRouter), args.Error(1)
 }
 
-func (m *mockService) UpdateLogicalRouter(userID, id string, req service.UpdateLogicalRouterRequest) (*service.LogicalRouter, error) {
+func (m *mockService) UpdateLogicalRouter(userID, id string, req models.UpdateLogicalRouterRequest) (*models.LogicalRouter, error) {
 	args := m.Called(userID, id, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*service.LogicalRouter), args.Error(1)
+	return args.Get(0).(*models.LogicalRouter), args.Error(1)
 }
 
 func (m *mockService) DeleteLogicalRouter(userID, id string) error {
@@ -88,12 +89,12 @@ func (m *mockService) DeleteLogicalRouter(userID, id string) error {
 	return args.Error(0)
 }
 
-func (m *mockService) GetNetworkTopology(userID string) (*service.NetworkTopology, error) {
+func (m *mockService) GetNetworkTopology(userID string) (*services.Topology, error) {
 	args := m.Called(userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*service.NetworkTopology), args.Error(1)
+	return args.Get(0).(*services.Topology), args.Error(1)
 }
 
 // Test helpers
@@ -137,7 +138,7 @@ func TestListLogicalSwitches(t *testing.T) {
 	mockSvc := new(mockService)
 	router := setupTestRouter(mockSvc)
 	
-	switches := []service.LogicalSwitch{
+	switches := []*models.LogicalSwitch{
 		{
 			UUID:        uuid.New().String(),
 			Name:        "switch1",
@@ -158,7 +159,7 @@ func TestListLogicalSwitches(t *testing.T) {
 	
 	assert.Equal(t, http.StatusOK, w.Code)
 	
-	var response []service.LogicalSwitch
+	var response []*models.LogicalSwitch
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, len(switches), len(response))
@@ -172,7 +173,7 @@ func TestGetLogicalSwitch(t *testing.T) {
 	router := setupTestRouter(mockSvc)
 	
 	switchID := uuid.New().String()
-	ls := &service.LogicalSwitch{
+	ls := &models.LogicalSwitch{
 		UUID:        switchID,
 		Name:        "switch1",
 		Description: "Test switch",
@@ -186,7 +187,7 @@ func TestGetLogicalSwitch(t *testing.T) {
 	
 	assert.Equal(t, http.StatusOK, w.Code)
 	
-	var response service.LogicalSwitch
+	var response models.LogicalSwitch
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, ls.UUID, response.UUID)
@@ -200,7 +201,7 @@ func TestGetLogicalSwitch_NotFound(t *testing.T) {
 	router := setupTestRouter(mockSvc)
 	
 	switchID := uuid.New().String()
-	mockSvc.On("GetLogicalSwitch", "test-user-id", switchID).Return(nil, service.ErrNotFound)
+	mockSvc.On("GetLogicalSwitch", "test-user-id", switchID).Return(nil, models.ErrNotFound)
 	
 	req, _ := http.NewRequest("GET", "/api/v1/switches/"+switchID, nil)
 	w := httptest.NewRecorder()
@@ -214,12 +215,12 @@ func TestCreateLogicalSwitch(t *testing.T) {
 	mockSvc := new(mockService)
 	router := setupTestRouter(mockSvc)
 	
-	createReq := service.CreateLogicalSwitchRequest{
+	createReq := models.CreateLogicalSwitchRequest{
 		Name:        "new-switch",
 		Description: "New test switch",
 	}
 	
-	createdSwitch := &service.LogicalSwitch{
+	createdSwitch := &models.LogicalSwitch{
 		UUID:        uuid.New().String(),
 		Name:        createReq.Name,
 		Description: createReq.Description,
@@ -235,7 +236,7 @@ func TestCreateLogicalSwitch(t *testing.T) {
 	
 	assert.Equal(t, http.StatusCreated, w.Code)
 	
-	var response service.LogicalSwitch
+	var response models.LogicalSwitch
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, createdSwitch.Name, response.Name)
@@ -266,12 +267,12 @@ func TestUpdateLogicalSwitch(t *testing.T) {
 	router := setupTestRouter(mockSvc)
 	
 	switchID := uuid.New().String()
-	updateReq := service.UpdateLogicalSwitchRequest{
+	updateReq := models.UpdateLogicalSwitchRequest{
 		Name:        stringPtr("updated-switch"),
 		Description: stringPtr("Updated description"),
 	}
 	
-	updatedSwitch := &service.LogicalSwitch{
+	updatedSwitch := &models.LogicalSwitch{
 		UUID:        switchID,
 		Name:        *updateReq.Name,
 		Description: *updateReq.Description,
@@ -287,7 +288,7 @@ func TestUpdateLogicalSwitch(t *testing.T) {
 	
 	assert.Equal(t, http.StatusOK, w.Code)
 	
-	var response service.LogicalSwitch
+	var response models.LogicalSwitch
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, updatedSwitch.Name, response.Name)
@@ -315,7 +316,7 @@ func TestListLogicalRouters(t *testing.T) {
 	mockSvc := new(mockService)
 	router := setupTestRouter(mockSvc)
 	
-	routers := []service.LogicalRouter{
+	routers := []*models.LogicalRouter{
 		{
 			UUID:    uuid.New().String(),
 			Name:    "router1",
@@ -336,7 +337,7 @@ func TestListLogicalRouters(t *testing.T) {
 	
 	assert.Equal(t, http.StatusOK, w.Code)
 	
-	var response []service.LogicalRouter
+	var response []*models.LogicalRouter
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, len(routers), len(response))
@@ -348,12 +349,12 @@ func TestCreateLogicalRouter(t *testing.T) {
 	mockSvc := new(mockService)
 	router := setupTestRouter(mockSvc)
 	
-	createReq := service.CreateLogicalRouterRequest{
+	createReq := models.CreateLogicalRouterRequest{
 		Name:    "new-router",
 		Enabled: true,
 	}
 	
-	createdRouter := &service.LogicalRouter{
+	createdRouter := &models.LogicalRouter{
 		UUID:    uuid.New().String(),
 		Name:    createReq.Name,
 		Enabled: createReq.Enabled,
@@ -369,7 +370,7 @@ func TestCreateLogicalRouter(t *testing.T) {
 	
 	assert.Equal(t, http.StatusCreated, w.Code)
 	
-	var response service.LogicalRouter
+	var response models.LogicalRouter
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, createdRouter.Name, response.Name)
@@ -382,20 +383,20 @@ func TestGetNetworkTopology(t *testing.T) {
 	mockSvc := new(mockService)
 	router := setupTestRouter(mockSvc)
 	
-	topology := &service.NetworkTopology{
-		Switches: []service.LogicalSwitch{
+	topology := &services.Topology{
+		Switches: []*models.LogicalSwitch{
 			{
 				UUID: uuid.New().String(),
 				Name: "switch1",
 			},
 		},
-		Routers: []service.LogicalRouter{
+		Routers: []*models.LogicalRouter{
 			{
 				UUID: uuid.New().String(),
 				Name: "router1",
 			},
 		},
-		Ports: []service.LogicalPort{
+		Ports: []*models.LogicalSwitchPort{
 			{
 				UUID: uuid.New().String(),
 				Name: "port1",
@@ -411,7 +412,7 @@ func TestGetNetworkTopology(t *testing.T) {
 	
 	assert.Equal(t, http.StatusOK, w.Code)
 	
-	var response service.NetworkTopology
+	var response services.Topology
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, len(topology.Switches), len(response.Switches))

@@ -141,14 +141,14 @@ class ApiClient {
     return this.request(`/logical-switches/${id}`);
   }
 
-  async createLogicalSwitch(data: any): Promise<LogicalSwitch> {
+  async createLogicalSwitch(data: Partial<LogicalSwitch>): Promise<LogicalSwitch> {
     return this.request('/logical-switches', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateLogicalSwitch(id: string, data: any): Promise<LogicalSwitch> {
+  async updateLogicalSwitch(id: string, data: Partial<LogicalSwitch>): Promise<LogicalSwitch> {
     return this.request(`/logical-switches/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -170,14 +170,14 @@ class ApiClient {
     return this.request(`/logical-routers/${id}`);
   }
 
-  async createLogicalRouter(data: any): Promise<LogicalRouter> {
+  async createLogicalRouter(data: Partial<LogicalRouter>): Promise<LogicalRouter> {
     return this.request('/logical-routers', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateLogicalRouter(id: string, data: any): Promise<LogicalRouter> {
+  async updateLogicalRouter(id: string, data: Partial<LogicalRouter>): Promise<LogicalRouter> {
     return this.request(`/logical-routers/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -206,14 +206,14 @@ class ApiClient {
     return this.request(`/logical-switch-ports/${id}`);
   }
 
-  async createLogicalSwitchPort(data: any): Promise<LogicalSwitchPort> {
+  async createLogicalSwitchPort(data: Partial<LogicalSwitchPort>): Promise<LogicalSwitchPort> {
     return this.request('/logical-switch-ports', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateLogicalSwitchPort(id: string, data: any): Promise<LogicalSwitchPort> {
+  async updateLogicalSwitchPort(id: string, data: Partial<LogicalSwitchPort>): Promise<LogicalSwitchPort> {
     return this.request(`/logical-switch-ports/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

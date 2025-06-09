@@ -198,11 +198,7 @@ export default function NetworkGraph({ data, onNodeClick }: NetworkGraphProps) {
       setSelectedNode(nodeData.id);
       
       if (onNodeClick) {
-        onNodeClick({
-          id: nodeData.id,
-          type: nodeData.type,
-          resource: nodeData.resource,
-        });
+        onNodeClick(node);
       }
     });
 

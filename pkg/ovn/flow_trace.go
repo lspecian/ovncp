@@ -374,7 +374,7 @@ func (c *Client) parseTraceOutput(output string, req *FlowTraceRequest) *FlowTra
 	// Generate summary
 	if result.ReachesDestination {
 		result.Summary = fmt.Sprintf("Packet successfully traced from %s to %s through %d hops",
-			req.SourcePortNum, req.DestinationIP, len(result.Hops))
+			req.SourcePort, req.DestinationIP, len(result.Hops))
 	} else if result.DroppedAt != nil {
 		result.Summary = fmt.Sprintf("Packet dropped at hop %d: %s",
 			result.DroppedAt.Index, result.DropReason)
@@ -546,7 +546,7 @@ func (c *Client) SimulateFlowTrace(ctx context.Context, req *FlowTraceRequest) (
 	// Generate summary
 	if result.ReachesDestination {
 		result.Summary = fmt.Sprintf("Packet successfully traced from %s to %s through %d hops",
-			req.SourcePortNum, req.DestinationIP, len(result.Hops))
+			req.SourcePort, req.DestinationIP, len(result.Hops))
 	} else {
 		result.Summary = fmt.Sprintf("Packet dropped at hop %d: %s",
 			result.DroppedAt.Index, result.DropReason)
