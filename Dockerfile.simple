@@ -1,0 +1,124 @@
+# Build stage for Go API
+FROM golang:1.23-alpine AS api-builder
+RUN apk add --no-cache git make gcc musl-dev sqlite-dev
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o ovncp ./cmd/api
+
+# Build stage for React web UI
+FROM node:20-alpine AS web-builder
+WORKDIR /app
+COPY web/package*.json ./
+RUN npm ci
+COPY web/ .
+RUN npm run build
+
+# Final stage - single container with both API and web
+FROM alpine:3.19
+RUN apk add --no-cache ca-certificates tzdata sqlite nginx supervisor
+
+# Create non-root user
+RUN addgroup -g 1000 -S ovncp && \
+    adduser -u 1000 -S ovncp -G ovncp
+
+# Setup directories
+RUN mkdir -p /app /data /usr/share/nginx/html /var/log/supervisor && \
+    chown -R ovncp:ovncp /app /data && \
+    chown -R ovncp:ovncp /var/cache/nginx /var/log/nginx && \
+    touch /var/run/nginx.pid && \
+    chown ovncp:ovncp /var/run/nginx.pid
+
+WORKDIR /app
+
+# Copy API binary and migrations
+COPY --from=api-builder /app/ovncp .
+COPY --from=api-builder /app/internal/db/migrations ./migrations
+
+# Copy web UI
+COPY --from=web-builder /app/dist /usr/share/nginx/html
+
+# Copy nginx config for serving web UI
+COPY <<EOF /etc/nginx/nginx.conf
+user ovncp;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    sendfile on;
+    keepalive_timeout 65;
+    gzip on;
+
+    server {
+        listen 8080;
+        server_name _;
+
+        # Serve web UI
+        location / {
+            root /usr/share/nginx/html;
+            try_files \$uri \$uri/ /index.html;
+        }
+
+        # Proxy API requests
+        location /api/ {
+            proxy_pass http://127.0.0.1:8081/api/;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
+
+        # Health check endpoint
+        location /health {
+            proxy_pass http://127.0.0.1:8081/health;
+        }
+
+        # Metrics endpoint
+        location /metrics {
+            proxy_pass http://127.0.0.1:8081/metrics;
+        }
+    }
+}
+EOF
+
+# Copy supervisor config
+COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
+[supervisord]
+nodaemon=true
+user=root
+
+[program:api]
+command=/app/ovncp
+user=ovncp
+environment=API_PORT="8081",API_HOST="0.0.0.0"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+autorestart=true
+
+[program:nginx]
+command=/usr/sbin/nginx -g "daemon off;"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+autorestart=true
+EOF
+
+# Set permissions
+RUN chown ovncp:ovncp /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 8080
+VOLUME ["/data"]
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

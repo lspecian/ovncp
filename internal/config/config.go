@@ -113,10 +113,10 @@ func Load() (*Config, error) {
 			MaxConnections: getIntEnv("OVN_MAX_CONNECTIONS", 10),
 		},
 		Database: DatabaseConfig{
-			Type:     getEnv("DB_TYPE", "postgres"),
+			Type:     getEnv("DB_TYPE", "sqlite"),
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
-			Name:     getEnv("DB_NAME", "ovncp"),
+			Name:     getEnv("DB_NAME", "./data/ovncp.db"),
 			User:     getEnv("DB_USER", "ovncp"),
 			Password: getEnv("DB_PASSWORD", ""),
 			SSLMode:  getEnv("DB_SSL_MODE", "disable"),

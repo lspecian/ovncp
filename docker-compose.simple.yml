@@ -1,0 +1,44 @@
+# Simple single-container deployment for OVNCP
+# Perfect for homelab use - no external database required
+
+services:
+  ovncp:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    container_name: ovncp
+    environment:
+      # API Configuration
+      API_PORT: "8080"
+      API_HOST: "0.0.0.0"
+      
+      # Database - SQLite by default (stored in volume)
+      DB_TYPE: "sqlite"
+      DB_NAME: "/data/ovncp.db"
+      
+      # OVN Configuration (update to match your setup)
+      OVN_NORTHBOUND_DB: "tcp:192.168.1.10:6641"
+      
+      # Auth Configuration
+      AUTH_ENABLED: "true"
+      JWT_SECRET: "${JWT_SECRET:-change-me-in-production-min-32-chars}"
+      
+      # Logging
+      LOG_LEVEL: "info"
+      LOG_FORMAT: "json"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ovncp_data:/data
+      # Optional: Mount OVN socket directly if running on same host
+      # - /var/run/ovn/ovnnb_db.sock:/var/run/ovn/ovnnb_db.sock
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  ovncp_data:
+    driver: local
