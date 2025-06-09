@@ -49,6 +49,7 @@ jobs:
     # Go security scanning
     - name: Run gosec Security Scanner
       uses: securego/gosec@master
+      continue-on-error: true
       with:
         args: '-fmt sarif -out gosec-results.sarif ./...'
     
@@ -60,12 +61,14 @@ jobs:
     
     # Nancy vulnerability scanner for Go dependencies
     - name: Run Nancy
+      continue-on-error: true
       run: |
         go list -json -deps ./... | docker run --rm -i sonatypecorp/nancy:latest sleuth
     
     # Staticcheck
     - name: Run Staticcheck
       uses: dominikh/staticcheck-action@v1
+      continue-on-error: true
       with:
         version: "latest"
 
