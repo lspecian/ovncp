@@ -46,32 +46,46 @@ A modern, production-ready control platform for Open Virtual Network (OVN) infra
 ## 📋 Requirements
 
 - **OVN**: Version 2.13+ (tested with 2.13, 20.03, 20.06, 21.06)
-- **Database**: PostgreSQL 14+ or CockroachDB 21+
+- **Database**: PostgreSQL 14+ or CockroachDB 21+ (or SQLite for single-node deployments)
 - **Runtime**: Docker 20+ or Kubernetes 1.24+
 - **Browser**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
 
 ## 🚀 Quick Start
 
-### Using Docker Compose (Development)
+### Option 1: Single Container (Fastest)
+
+```bash
+# Run the all-in-one image (includes API, Web UI, and SQLite)
+docker run -d \
+  -p 8080:8080 \
+  -e OVN_NORTHBOUND_DB="tcp:your-ovn-host:6641" \
+  -v ovncp_data:/data \
+  ghcr.io/lspecian/ovncp:main-simple
+
+# Access the web UI at http://localhost:8080
+# Default credentials: admin/admin
+```
+
+### Option 2: Using Docker Compose (Development)
 
 ```bash
 # Clone the repository
 git clone https://github.com/lspecian/ovncp.git
 cd ovncp
 
-# Configure environment
+# For simple deployment (SQLite, single container)
+docker-compose -f docker-compose.simple.yml up -d
+
+# For full deployment (PostgreSQL, separate containers)
 cp .env.example .env
 # Edit .env with your configuration
-
-# Start all services
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
 
 # Access the services
-# - Web UI: http://localhost:3000
-# - API: http://localhost:8080
+# - Web UI: http://localhost:8080
 # - API Docs: http://localhost:8080/api/docs
 # - Metrics: http://localhost:8080/metrics
 ```

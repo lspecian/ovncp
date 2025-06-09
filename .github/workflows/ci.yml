@@ -168,6 +168,19 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+    
+    # Build and push Simple (all-in-one) image
+    - name: Build and push Simple image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.simple
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}-simple
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   # Security scanning
   security-scan:
@@ -202,3 +215,16 @@ jobs:
       with:
         sarif_file: 'trivy-web-results.sarif'
         category: 'trivy-web'
+    
+    - name: Run Trivy vulnerability scanner on Simple
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}-simple
+        format: 'sarif'
+        output: 'trivy-simple-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-simple-results.sarif'
+        category: 'trivy-simple'

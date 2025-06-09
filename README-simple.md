@@ -7,11 +7,16 @@ OVN Control Platform - A simple, homelab-friendly web UI for managing Open Virtu
 ### Option 1: Docker (Simplest)
 
 ```bash
-# Clone the repository
+# Run the pre-built all-in-one image
+docker run -d \
+  -p 8080:8080 \
+  -e OVN_NORTHBOUND_DB="tcp:your-ovn-host:6641" \
+  -v ovncp_data:/data \
+  ghcr.io/lspecian/ovncp:main-simple
+
+# Or using docker-compose
 git clone https://github.com/lspecian/ovncp.git
 cd ovncp
-
-# Start with a single container (includes web UI + API + SQLite)
 docker-compose -f docker-compose.simple.yml up -d
 
 # Access the web UI
