@@ -197,6 +197,11 @@ func (s *TemplateService) generateRules(template *templates.PolicyTemplate, vari
 
 // processTemplate processes template strings with variables
 func (s *TemplateService) processTemplate(templateStr string, variables map[string]interface{}) (string, error) {
+	// Pre-process triple braces to avoid confusing Go template parser
+	// Replace {{{ with a placeholder
+	templateStr = strings.ReplaceAll(templateStr, "{{{", "___TRIPLE_OPEN___")
+	templateStr = strings.ReplaceAll(templateStr, "}}}", "___TRIPLE_CLOSE___")
+	
 	// Create custom template functions
 	funcMap := template.FuncMap{
 		"join": strings.Join,
@@ -221,11 +226,17 @@ func (s *TemplateService) processTemplate(templateStr string, variables map[stri
 	// Process result for OVN syntax
 	result := buf.String()
 	
+	// Restore triple braces
+	result = strings.ReplaceAll(result, "___TRIPLE_OPEN___", "{{{")
+	result = strings.ReplaceAll(result, "___TRIPLE_CLOSE___", "}}}")
+	
 	// Handle comma-separated lists in triple braces
 	re := regexp.MustCompile(`\{\{\{([^}]+)\}\}\}`)
 	result = re.ReplaceAllStringFunc(result, func(match string) string {
-		// Extract the variable name
-		varName := strings.Trim(match, "{}")
+		// Extract the variable name - remove the triple braces
+		varName := match[3:len(match)-3]
+		// Remove leading dot if present
+		varName = strings.TrimPrefix(varName, ".")
 		if val, ok := variables[varName]; ok {
 			// Convert to OVN list format
 			if strVal, ok := val.(string); ok {

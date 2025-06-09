@@ -104,7 +104,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    2000,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{server_ip}} && tcp.dst == 80 && ip4.src == {{allowed_sources}}",
+				Match:       "ip4.dst == {{.server_ip}} && tcp.dst == 80 && ip4.src == {{.allowed_sources}}",
 			},
 			{
 				Name:        "allow-https",
@@ -112,7 +112,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    2000,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{server_ip}} && tcp.dst == 443 && ip4.src == {{allowed_sources}}",
+				Match:       "ip4.dst == {{.server_ip}} && tcp.dst == 443 && ip4.src == {{.allowed_sources}}",
 			},
 			{
 				Name:        "allow-ssh",
@@ -120,7 +120,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1900,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "{{if enable_ssh}}ip4.dst == {{server_ip}} && tcp.dst == 22 && ip4.src == {{ssh_sources}}{{else}}0{{end}}",
+				Match:       "{{if .enable_ssh}}ip4.dst == {{.server_ip}} && tcp.dst == 22 && ip4.src == {{.ssh_sources}}{{else}}0{{end}}",
 			},
 			{
 				Name:        "allow-established",
@@ -128,7 +128,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1800,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ct.est && ct.rpl && ip4.dst == {{server_ip}}",
+				Match:       "ct.est && ct.rpl && ip4.dst == {{.server_ip}}",
 			},
 			{
 				Name:        "allow-icmp",
@@ -136,7 +136,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1700,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{server_ip}} && icmp4",
+				Match:       "ip4.dst == {{.server_ip}} && icmp4",
 			},
 			{
 				Name:        "default-deny",
@@ -144,7 +144,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    100,
 				Direction:   "ingress",
 				Action:      "drop",
-				Match:       "ip4.dst == {{server_ip}}",
+				Match:       "ip4.dst == {{.server_ip}}",
 				Log:         true,
 			},
 		},
@@ -209,7 +209,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    2000,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{db_ip}} && tcp.dst == {{db_port}} && ip4.src == {{app_subnet}}",
+				Match:       "ip4.dst == {{.db_ip}} && tcp.dst == {{.db_port}} && ip4.src == {{.app_subnet}}",
 			},
 			{
 				Name:        "allow-backup",
@@ -217,7 +217,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1900,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "{{if backup_server}}ip4.dst == {{db_ip}} && tcp.dst == {{db_port}} && ip4.src == {{backup_server}}{{else}}0{{end}}",
+				Match:       "{{if .backup_server}}ip4.dst == {{.db_ip}} && tcp.dst == {{.db_port}} && ip4.src == {{.backup_server}}{{else}}0{{end}}",
 			},
 			{
 				Name:        "allow-replication",
@@ -225,7 +225,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1900,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "{{if enable_replication}}ip4.dst == {{db_ip}} && tcp.dst == {{db_port}} && ip4.src == {{{replica_ips}}}{{else}}0{{end}}",
+				Match:       "{{if .enable_replication}}ip4.dst == {{.db_ip}} && tcp.dst == {{.db_port}} && ip4.src == {{{.replica_ips}}}{{else}}0{{end}}",
 			},
 			{
 				Name:        "allow-established",
@@ -233,7 +233,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1800,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ct.est && ct.rpl && ip4.dst == {{db_ip}}",
+				Match:       "ct.est && ct.rpl && ip4.dst == {{.db_ip}}",
 			},
 			{
 				Name:        "deny-all",
@@ -241,7 +241,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    100,
 				Direction:   "ingress",
 				Action:      "drop",
-				Match:       "ip4.dst == {{db_ip}} && tcp.dst == {{db_port}}",
+				Match:       "ip4.dst == {{.db_ip}} && tcp.dst == {{.db_port}}",
 				Log:         true,
 			},
 		},
@@ -312,7 +312,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    2000,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{service_ip}} && tcp.dst == {{service_port}} && ip4.src == {{{allowed_services}}}",
+				Match:       "ip4.dst == {{.service_ip}} && tcp.dst == {{.service_port}} && ip4.src == {{{.allowed_services}}}",
 			},
 			{
 				Name:        "allow-health-checks",
@@ -320,7 +320,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1900,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{service_ip}} && tcp.dst == {{health_port}}",
+				Match:       "ip4.dst == {{.service_ip}} && tcp.dst == {{.health_port}}",
 			},
 			{
 				Name:        "allow-metrics",
@@ -328,7 +328,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1800,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{service_ip}} && tcp.dst == {{metrics_port}} && ip4.src == {{monitoring_subnet}}",
+				Match:       "ip4.dst == {{.service_ip}} && tcp.dst == {{.metrics_port}} && ip4.src == {{.monitoring_subnet}}",
 			},
 			{
 				Name:        "allow-dns",
@@ -336,7 +336,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1700,
 				Direction:   "egress",
 				Action:      "allow",
-				Match:       "ip4.src == {{service_ip}} && udp.dst == 53",
+				Match:       "ip4.src == {{.service_ip}} && udp.dst == 53",
 			},
 			{
 				Name:        "allow-service-egress",
@@ -344,7 +344,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1600,
 				Direction:   "egress",
 				Action:      "allow",
-				Match:       "ip4.src == {{service_ip}} && ip4.dst == {{{allowed_services}}}",
+				Match:       "ip4.src == {{.service_ip}} && ip4.dst == {{{.allowed_services}}}",
 			},
 			{
 				Name:        "deny-all-ingress",
@@ -352,7 +352,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    100,
 				Direction:   "ingress",
 				Action:      "drop",
-				Match:       "ip4.dst == {{service_ip}}",
+				Match:       "ip4.dst == {{.service_ip}}",
 			},
 		},
 	}
@@ -394,7 +394,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    2000,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{dmz_subnet}} && (tcp.dst == 80 || tcp.dst == 443)",
+				Match:       "ip4.dst == {{.dmz_subnet}} && (tcp.dst == 80 || tcp.dst == 443)",
 			},
 			{
 				Name:        "deny-dmz-to-internal",
@@ -402,7 +402,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1900,
 				Direction:   "egress",
 				Action:      "drop",
-				Match:       "ip4.src == {{dmz_subnet}} && ip4.dst == {{{internal_subnets}}}",
+				Match:       "ip4.src == {{.dmz_subnet}} && ip4.dst == {{{.internal_subnets}}}",
 				Log:         true,
 			},
 			{
@@ -411,7 +411,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    2000,
 				Direction:   "egress",
 				Action:      "allow",
-				Match:       "ip4.src == {{dmz_subnet}} && ip4.dst == {{{internal_subnets}}} && tcp.dst == {{{allowed_dmz_to_internal_ports}}}",
+				Match:       "ip4.src == {{.dmz_subnet}} && ip4.dst == {{{.internal_subnets}}} && tcp.dst == {{{.allowed_dmz_to_internal_ports}}}",
 			},
 			{
 				Name:        "allow-dmz-to-internet",
@@ -419,7 +419,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1800,
 				Direction:   "egress",
 				Action:      "allow",
-				Match:       "ip4.src == {{dmz_subnet}} && !(ip4.dst == {{{internal_subnets}}})",
+				Match:       "ip4.src == {{.dmz_subnet}} && !(ip4.dst == {{{.internal_subnets}}})",
 			},
 		},
 	}
@@ -465,7 +465,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    100,
 				Direction:   "ingress",
 				Action:      "drop",
-				Match:       "ip4.dst == {{resource_ip}}",
+				Match:       "ip4.dst == {{.resource_ip}}",
 				Log:         true,
 			},
 			{
@@ -474,7 +474,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    2000,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.dst == {{resource_ip}} && tcp.dst == {{resource_port}} && ip4.src == {{{authorized_users}}}",
+				Match:       "ip4.dst == {{.resource_ip}} && tcp.dst == {{.resource_port}} && ip4.src == {{{.authorized_users}}}",
 				Log:         true,
 			},
 			{
@@ -483,7 +483,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1900,
 				Direction:   "ingress",
 				Action:      "drop",
-				Match:       "{{if require_encryption}}ip4.dst == {{resource_ip}} && tcp.dst != 443 && tcp.dst != 22{{else}}0{{end}}",
+				Match:       "{{if .require_encryption}}ip4.dst == {{.resource_ip}} && tcp.dst != 443 && tcp.dst != 22{{else}}0{{end}}",
 			},
 		},
 	}
@@ -532,7 +532,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    2000,
 				Direction:   "egress",
 				Action:      "allow",
-				Match:       "ip4.src == {{pod_cidr}} && udp.dst == 53",
+				Match:       "ip4.src == {{.pod_cidr}} && udp.dst == 53",
 			},
 			{
 				Name:        "allow-same-namespace",
@@ -540,7 +540,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1900,
 				Direction:   "ingress",
 				Action:      "allow",
-				Match:       "ip4.src == {{pod_cidr}} && ip4.dst == {{pod_cidr}}",
+				Match:       "ip4.src == {{.pod_cidr}} && ip4.dst == {{.pod_cidr}}",
 			},
 			{
 				Name:        "allow-services",
@@ -548,7 +548,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1800,
 				Direction:   "egress",
 				Action:      "allow",
-				Match:       "ip4.src == {{pod_cidr}} && ip4.dst == {{service_cidr}}",
+				Match:       "ip4.src == {{.pod_cidr}} && ip4.dst == {{.service_cidr}}",
 			},
 			{
 				Name:        "deny-other-namespaces",
@@ -556,7 +556,7 @@ func (l *PolicyTemplateLibrary) loadBuiltinTemplates() {
 				Priority:    1000,
 				Direction:   "ingress",
 				Action:      "drop",
-				Match:       "ip4.dst == {{pod_cidr}}",
+				Match:       "ip4.dst == {{.pod_cidr}}",
 			},
 		},
 	}

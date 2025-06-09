@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/lspecian/ovncp/internal/ovn"
+	"github.com/lspecian/ovncp/pkg/ovn"
 )
 
 // Test configuration from environment

@@ -262,7 +262,7 @@ func TestTemplateService_ProcessTemplate(t *testing.T) {
 	}{
 		{
 			name:     "Simple substitution",
-			template: "ip4.dst == {{server_ip}}",
+			template: "ip4.dst == {{.server_ip}}",
 			variables: map[string]interface{}{
 				"server_ip": "10.0.1.10",
 			},
@@ -270,7 +270,7 @@ func TestTemplateService_ProcessTemplate(t *testing.T) {
 		},
 		{
 			name:     "Conditional logic",
-			template: "{{if enable_ssh}}tcp.dst == 22{{else}}0{{end}}",
+			template: "{{if .enable_ssh}}tcp.dst == 22{{else}}0{{end}}",
 			variables: map[string]interface{}{
 				"enable_ssh": true,
 			},
@@ -278,7 +278,7 @@ func TestTemplateService_ProcessTemplate(t *testing.T) {
 		},
 		{
 			name:     "List formatting",
-			template: "ip4.src == {{{allowed_ips}}}",
+			template: "ip4.src == {{{.allowed_ips}}}",
 			variables: map[string]interface{}{
 				"allowed_ips": "10.0.1.1,10.0.1.2,10.0.1.3",
 			},

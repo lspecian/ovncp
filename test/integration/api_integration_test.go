@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,11 +18,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"github.com/lspecian/ovncp/internal/api"
 	"github.com/lspecian/ovncp/internal/auth"
 	"github.com/lspecian/ovncp/internal/config"
 	"github.com/lspecian/ovncp/internal/db"
-	"github.com/lspecian/ovncp/internal/ovn"
+	"github.com/lspecian/ovncp/pkg/ovn"
 	"github.com/lspecian/ovncp/internal/models"
 	"github.com/lspecian/ovncp/internal/services"
 )
@@ -67,8 +69,11 @@ func setupTestServer(t *testing.T) *httptest.Server {
 	err = ovnClient.Connect(ctx)
 	require.NoError(t, err)
 	
+	// Initialize logger
+	logger := zap.NewNop()
+	
 	// Initialize service
-	svc := models.NewService(ovnClient, database)
+	svc := services.NewOVNService(ovnClient, database, logger)
 	
 	// Initialize auth service (disabled)
 	authSvc := auth.NewAuthService(auth.Config{Enabled: false})
