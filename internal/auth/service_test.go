@@ -90,7 +90,7 @@ func TestExchangeCode(t *testing.T) {
 	svc := &service{
 		db: db,
 		config: &config.AuthConfig{
-			TokenExpiry: 24 * time.Hour,
+			TokenExpiration: 24 * time.Hour,
 		},
 		providers: map[string]Provider{
 			"test": mockProv,

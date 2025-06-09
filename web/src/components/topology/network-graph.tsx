@@ -11,7 +11,7 @@ cytoscape.use(cola);
 
 interface NetworkGraphProps {
   data: TopologyData;
-  onNodeClick?: (node: any) => void;
+  onNodeClick?: (node: cytoscape.NodeSingular) => void;
 }
 
 export default function NetworkGraph({ data, onNodeClick }: NetworkGraphProps) {
@@ -185,7 +185,7 @@ export default function NetworkGraph({ data, onNodeClick }: NetworkGraphProps) {
         edgeLength: 150,
         nodeSpacing: 50,
         maxSimulationTime: 2000,
-      } as any,
+      } as cytoscape.LayoutOptions,
       minZoom: 0.1,
       maxZoom: 4,
       wheelSensitivity: 0.1,

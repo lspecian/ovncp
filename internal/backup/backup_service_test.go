@@ -3,7 +3,6 @@ package backup
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/lspecian/ovncp/internal/models"
 	"github.com/lspecian/ovncp/internal/services"
@@ -163,6 +162,19 @@ func (m *MockOVNService) UpdateACL(ctx context.Context, id string, acl *models.A
 func (m *MockOVNService) DeleteACL(ctx context.Context, id string) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
+}
+
+func (m *MockOVNService) ExecuteTransaction(ctx context.Context, ops []services.TransactionOp) error {
+	args := m.Called(ctx, ops)
+	return args.Error(0)
+}
+
+func (m *MockOVNService) GetTopology(ctx context.Context) (*services.Topology, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*services.Topology), args.Error(1)
 }
 
 // MockBackupStorage for testing

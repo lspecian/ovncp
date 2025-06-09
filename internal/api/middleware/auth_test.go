@@ -79,6 +79,14 @@ func (m *mockAuthService) DeactivateUser(ctx context.Context, userID string) err
 	return args.Error(0)
 }
 
+func (m *mockAuthService) LocalLogin(ctx context.Context, username, password string) (*models.Session, error) {
+	args := m.Called(ctx, username, password)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Session), args.Error(1)
+}
+
 func TestAuthMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	
