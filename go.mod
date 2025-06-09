@@ -1,8 +1,6 @@
 module github.com/lspecian/ovncp
 
-go 1.23.0
-
-toolchain go1.23.3
+go 1.23
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
