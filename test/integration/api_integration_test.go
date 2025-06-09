@@ -42,9 +42,9 @@ func setupTestServer(t *testing.T) *httptest.Server {
 			SSLMode:  "disable",
 		},
 		OVN: config.OVNConfig{
-			NorthboundAddr: ovnNBAddr,
-			SouthboundAddr: ovnSBAddr,
-			Timeout:        30 * time.Second,
+			NorthboundDB: ovnNBAddr,
+			SouthboundDB: ovnSBAddr,
+			Timeout:      30 * time.Second,
 		},
 		Auth: config.AuthConfig{
 			Enabled: false, // Disable auth for integration tests
@@ -52,19 +52,15 @@ func setupTestServer(t *testing.T) *httptest.Server {
 	}
 	
 	// Initialize database
-	database, err := db.Connect(cfg.Database)
+	database, err := db.New(&cfg.Database)
 	require.NoError(t, err)
 	
 	// Run migrations
-	err = db.Migrate(database, "up")
+	err = database.Migrate()
 	require.NoError(t, err)
 	
 	// Initialize OVN client
-	ovnClient, err := ovn.NewClient(ovn.Config{
-		NorthboundAddr: cfg.OVN.NorthboundAddr,
-		SouthboundAddr: cfg.OVN.SouthboundAddr,
-		Timeout:        cfg.OVN.Timeout,
-	})
+	ovnClient, err := ovn.NewClient(&cfg.OVN)
 	require.NoError(t, err)
 	
 	ctx := context.Background()
