@@ -339,8 +339,9 @@ func TestBackupService_RestoreBackup(t *testing.T) {
 	// Mock backup data
 	backupData := &BackupData{
 		Metadata: BackupMetadata{
-			ID:   "backup-123",
-			Name: "Test Backup",
+			ID:      "backup-123",
+			Name:    "Test Backup",
+			Version: "1.0",
 		},
 		LogicalSwitches: []*models.LogicalSwitch{
 			{UUID: "sw1", Name: "switch1"},
@@ -415,8 +416,9 @@ func TestBackupService_RestoreWithConflicts(t *testing.T) {
 	// Mock backup data
 	backupData := &BackupData{
 		Metadata: BackupMetadata{
-			ID:   "backup-123",
-			Name: "Test Backup",
+			ID:      "backup-123",
+			Name:    "Test Backup",
+			Version: "1.0",
 		},
 		LogicalSwitches: []*models.LogicalSwitch{
 			{UUID: "sw1", Name: "switch1"},
@@ -463,8 +465,9 @@ func TestBackupService_DryRunRestore(t *testing.T) {
 	// Mock backup data
 	backupData := &BackupData{
 		Metadata: BackupMetadata{
-			ID:   "backup-123",
-			Name: "Test Backup",
+			ID:      "backup-123",
+			Name:    "Test Backup",
+			Version: "1.0",
 		},
 		LogicalSwitches: []*models.LogicalSwitch{
 			{UUID: "sw1", Name: "switch1"},
