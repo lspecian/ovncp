@@ -38,6 +38,11 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
     
+    - name: Set Go environment
+      run: |
+        echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
+        echo "GOTOOLCHAIN=local" >> $GITHUB_ENV
+    
     - name: Build
       run: |
         go mod download

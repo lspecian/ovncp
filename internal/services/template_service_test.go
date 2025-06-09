@@ -119,6 +119,19 @@ func (m *MockOVNService) DeleteACL(ctx context.Context, id string) error {
 	return args.Error(0)
 }
 
+func (m *MockOVNService) ExecuteTransaction(ctx context.Context, ops []TransactionOp) error {
+	args := m.Called(ctx, ops)
+	return args.Error(0)
+}
+
+func (m *MockOVNService) GetTopology(ctx context.Context) (*Topology, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*Topology), args.Error(1)
+}
+
 func TestTemplateService_ListTemplates(t *testing.T) {
 	mockOVN := new(MockOVNService)
 	logger := zap.NewNop()
