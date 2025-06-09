@@ -302,7 +302,7 @@ func Audit(cfg AuditConfig) gin.HandlerFunc {
 		parseActionAndResource(c, event)
 		
 		// Add request body (redact sensitive fields)
-		if cfg.LogRequestBody && len(requestBody) > 0 && len(requestBody) <= cfg.MaxBodySize {
+		if cfg.LogRequestBody && len(requestBody) > 0 && int64(len(requestBody)) <= cfg.MaxBodySize {
 			redactedBody := redactSensitiveData(requestBody, cfg.SensitiveFields)
 			event.RequestBody = json.RawMessage(redactedBody)
 		}

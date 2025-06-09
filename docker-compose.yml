@@ -19,15 +19,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # OVN Northbound Database (development/testing)
-  ovn-northbound:
-    image: ovn-org/ovn-nb:latest
-    container_name: ovncp-ovn-nb
-    ports:
-      - "6641:6641"
-    volumes:
-      - ovn_nb_data:/var/lib/ovn
-    command: ["ovsdb-server", "--remote=ptcp:6641", "/etc/ovn/ovnnb_db.db"]
+  # OVN Northbound Database (development/testing) - Using mock for now
+  # ovn-northbound:
+  #   image: ovn-org/ovn-nb:latest
+  #   container_name: ovncp-ovn-nb
+  #   ports:
+  #     - "6641:6641"
+  #   volumes:
+  #     - ovn_nb_data:/var/lib/ovn
+  #   command: ["ovsdb-server", "--remote=ptcp:6641", "/etc/ovn/ovnnb_db.db"]
 
   # API Backend
   api:
@@ -51,12 +51,12 @@ services:
       DB_PASSWORD: ovncp_password
       DB_SSL_MODE: disable
       
-      # OVN Configuration
-      OVN_NORTHBOUND_DB: "tcp:ovn-northbound:6641"
+      # OVN Configuration (disabled for demo)
+      # OVN_NORTHBOUND_DB: "tcp:ovn-northbound:6641"
       
       # Auth Configuration
       AUTH_ENABLED: "true"
-      JWT_SECRET: "your-secret-key-change-in-production"
+      JWT_SECRET: "your-secret-key-change-in-production-min-32-chars"
       
       # OAuth Providers (configure as needed)
       OAUTH_GITHUB_CLIENT_ID: ${OAUTH_GITHUB_CLIENT_ID:-}

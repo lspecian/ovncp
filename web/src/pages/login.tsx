@@ -1,13 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/stores/auth';
-import { Github, Chrome, KeyRound } from 'lucide-react';
+import { Github, Chrome, KeyRound, User } from 'lucide-react';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { user, login, isLoading, error } = useAuthStore();
+  const { user, login, localLogin, isLoading, error } = useAuthStore();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -17,6 +22,16 @@ export default function LoginPage() {
 
   const handleLogin = (provider: string) => {
     login(provider);
+  };
+
+  const handleLocalLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await localLogin(username, password);
+      navigate('/dashboard');
+    } catch (error) {
+      // Error is handled in the store
+    }
   };
 
   return (
@@ -37,40 +52,92 @@ export default function LoginPage() {
             </div>
           )}
           
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => handleLogin('github')}
-              disabled={isLoading}
-            >
-              <Github className="mr-2 h-4 w-4" />
-              Continue with GitHub
-            </Button>
+          <Tabs defaultValue="local" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="local">Local Login</TabsTrigger>
+              <TabsTrigger value="oauth">OAuth</TabsTrigger>
+            </TabsList>
             
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => handleLogin('google')}
-              disabled={isLoading}
-            >
-              <Chrome className="mr-2 h-4 w-4" />
-              Continue with Google
-            </Button>
+            <TabsContent value="local" className="space-y-4">
+              <form onSubmit={handleLocalLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+                
+                <div className="text-center text-sm text-muted-foreground">
+                  Default credentials: admin / admin
+                </div>
+              </form>
+            </TabsContent>
             
-            {/* Show custom OIDC option if configured */}
-            {import.meta.env.VITE_OIDC_ENABLED === 'true' && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleLogin('oidc')}
-                disabled={isLoading}
-              >
-                <KeyRound className="mr-2 h-4 w-4" />
-                Continue with SSO
-              </Button>
-            )}
-          </div>
+            <TabsContent value="oauth" className="space-y-4">
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => handleLogin('github')}
+                  disabled={isLoading}
+                >
+                  <Github className="mr-2 h-4 w-4" />
+                  Continue with GitHub
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => handleLogin('google')}
+                  disabled={isLoading}
+                >
+                  <Chrome className="mr-2 h-4 w-4" />
+                  Continue with Google
+                </Button>
+                
+                {/* Show custom OIDC option if configured */}
+                {import.meta.env.VITE_OIDC_ENABLED === 'true' && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleLogin('oidc')}
+                    disabled={isLoading}
+                  >
+                    <KeyRound className="mr-2 h-4 w-4" />
+                    Continue with SSO
+                  </Button>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
           
           <div className="text-center text-sm text-muted-foreground">
             By signing in, you agree to our terms of service and privacy policy.

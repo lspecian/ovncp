@@ -3,6 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/lspecian/ovncp/internal/config"
@@ -68,6 +70,33 @@ func (db *DB) Close() error {
 
 // Migrate runs database migrations
 func (db *DB) Migrate() error {
-	// TODO: Implement migration logic
+	migrationFiles := []string{
+		"001_create_users_table.up.sql",
+		"002_create_sessions_table.up.sql",
+	}
+
+	for _, file := range migrationFiles {
+		content, err := os.ReadFile(fmt.Sprintf("/app/migrations/%s", file))
+		if err != nil {
+			// Skip if file doesn't exist
+			if os.IsNotExist(err) {
+				continue
+			}
+			return fmt.Errorf("failed to read migration file %s: %w", file, err)
+		}
+
+		if _, err := db.conn.Exec(string(content)); err != nil {
+			// Ignore errors if tables/indexes already exist
+			if !strings.Contains(err.Error(), "already exists") {
+				return fmt.Errorf("failed to execute migration %s: %w", file, err)
+			}
+		}
+	}
+
 	return nil
+}
+
+// DB returns the underlying sql.DB connection
+func (db *DB) DB() *sql.DB {
+	return db.conn
 }

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lspecian/ovncp/internal/models"
 	"github.com/lspecian/ovncp/internal/services"
 	"go.uber.org/zap"
 )
@@ -46,7 +47,7 @@ func TenantMiddleware(tenantService *services.TenantService, logger *zap.Logger)
 		if tenantID == "" {
 			if userID, exists := c.Get("user_id"); exists {
 				// Get user's tenants
-				filter := &services.TenantFilter{
+				filter := &models.TenantFilter{
 					UserID: userID.(string),
 				}
 				tenants, err := tenantService.ListTenants(c.Request.Context(), filter)

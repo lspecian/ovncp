@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lspecian/ovncp/internal/metrics"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Metrics middleware for recording HTTP metrics
@@ -109,5 +110,13 @@ func RecordDBMetrics(queryType, table string) func(error) {
 			metrics.RecordError("database", err.Error())
 		}
 		metrics.RecordDBQuery(queryType, table, status, duration)
+	}
+}
+
+// PrometheusHandler returns the Prometheus metrics handler
+func PrometheusHandler() gin.HandlerFunc {
+	h := promhttp.Handler()
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
 	}
 }

@@ -25,9 +25,17 @@ func (h *TopologyHandler) GetTopology(c *gin.Context) {
 
 	topology, err := h.service.GetTopology(ctx)
 	if err != nil {
-		handleError(c, err)
+		h.handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, topology)
+}
+
+// handleError handles generic errors
+func (h *TopologyHandler) handleError(c *gin.Context, err error) {
+	c.JSON(http.StatusInternalServerError, gin.H{
+		"error": "internal server error",
+		"details": err.Error(),
+	})
 }

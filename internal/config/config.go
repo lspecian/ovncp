@@ -155,9 +155,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("JWT_SECRET is required when AUTH_ENABLED is true")
 	}
 	
-	if c.Auth.Enabled && len(c.Auth.Providers) == 0 {
-		return fmt.Errorf("at least one OAuth provider must be configured when AUTH_ENABLED is true")
-	}
+	// OAuth providers are optional - we can use local auth
+	// if c.Auth.Enabled && len(c.Auth.Providers) == 0 {
+	// 	return fmt.Errorf("at least one OAuth provider must be configured when AUTH_ENABLED is true")
+	// }
 	
 	for name, provider := range c.Auth.Providers {
 		if provider.ClientID == "" || provider.ClientSecret == "" {

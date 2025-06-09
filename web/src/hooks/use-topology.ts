@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { LogicalSwitch, LogicalRouter, LogicalSwitchPort } from '@/types';
+import { LogicalSwitch, LogicalRouter, LogicalSwitchPort, PaginatedResponse } from '@/types';
 
 export interface TopologyData {
   switches: LogicalSwitch[];
@@ -19,9 +19,9 @@ export function useTopology() {
       ]);
       
       return {
-        switches: switches.data || [],
-        routers: routers.data || [],
-        ports: ports.data || [],
+        switches: (switches as PaginatedResponse<LogicalSwitch>).data || [],
+        routers: (routers as PaginatedResponse<LogicalRouter>).data || [],
+        ports: (ports as PaginatedResponse<LogicalSwitchPort>).data || [],
       };
     },
     refetchInterval: 30000, // Refresh every 30 seconds

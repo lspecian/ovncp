@@ -1,4 +1,4 @@
-import { Session, User, UserRole } from '@/types';
+import { Session, User, UserRole, LogicalSwitch, LogicalRouter, LogicalSwitchPort, ACL, LoadBalancer, PaginatedResponse } from '@/types';
 
 const API_BASE_URL = '/api/v1';
 
@@ -27,13 +27,17 @@ class ApiClient {
     path: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
     };
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    // Merge with any additional headers from options
+    if (options.headers) {
+      Object.assign(headers, options.headers);
     }
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -55,6 +59,19 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ provider }),
     });
+  }
+
+  async localLogin(username: string, password: string): Promise<Session> {
+    const session = await this.request<Session>('/auth/login/local', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+    
+    // Store session
+    localStorage.setItem('ovncp_session', JSON.stringify(session));
+    this.setToken(session.access_token);
+    
+    return session;
   }
 
   async handleCallback(provider: string, code: string, state: string): Promise<Session> {
@@ -116,65 +133,65 @@ class ApiClient {
   }
 
   // Logical Switches
-  async listLogicalSwitches(limit = 20, offset = 0) {
+  async listLogicalSwitches(limit = 20, offset = 0): Promise<PaginatedResponse<LogicalSwitch>> {
     return this.request(`/logical-switches?limit=${limit}&offset=${offset}`);
   }
 
-  async getLogicalSwitch(id: string) {
+  async getLogicalSwitch(id: string): Promise<LogicalSwitch> {
     return this.request(`/logical-switches/${id}`);
   }
 
-  async createLogicalSwitch(data: any) {
+  async createLogicalSwitch(data: any): Promise<LogicalSwitch> {
     return this.request('/logical-switches', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateLogicalSwitch(id: string, data: any) {
+  async updateLogicalSwitch(id: string, data: any): Promise<LogicalSwitch> {
     return this.request(`/logical-switches/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteLogicalSwitch(id: string) {
+  async deleteLogicalSwitch(id: string): Promise<void> {
     return this.request(`/logical-switches/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Logical Routers
-  async listLogicalRouters(limit = 20, offset = 0) {
+  async listLogicalRouters(limit = 20, offset = 0): Promise<PaginatedResponse<LogicalRouter>> {
     return this.request(`/logical-routers?limit=${limit}&offset=${offset}`);
   }
 
-  async getLogicalRouter(id: string) {
+  async getLogicalRouter(id: string): Promise<LogicalRouter> {
     return this.request(`/logical-routers/${id}`);
   }
 
-  async createLogicalRouter(data: any) {
+  async createLogicalRouter(data: any): Promise<LogicalRouter> {
     return this.request('/logical-routers', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateLogicalRouter(id: string, data: any) {
+  async updateLogicalRouter(id: string, data: any): Promise<LogicalRouter> {
     return this.request(`/logical-routers/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteLogicalRouter(id: string) {
+  async deleteLogicalRouter(id: string): Promise<void> {
     return this.request(`/logical-routers/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Logical Switch Ports
-  async listLogicalSwitchPorts(switchId?: string, limit = 20, offset = 0) {
+  async listLogicalSwitchPorts(switchId?: string, limit = 20, offset = 0): Promise<PaginatedResponse<LogicalSwitchPort>> {
     const query = new URLSearchParams({
       limit: limit.toString(),
       offset: offset.toString(),
@@ -185,32 +202,32 @@ class ApiClient {
     return this.request(`/logical-switch-ports?${query}`);
   }
 
-  async getLogicalSwitchPort(id: string) {
+  async getLogicalSwitchPort(id: string): Promise<LogicalSwitchPort> {
     return this.request(`/logical-switch-ports/${id}`);
   }
 
-  async createLogicalSwitchPort(data: any) {
+  async createLogicalSwitchPort(data: any): Promise<LogicalSwitchPort> {
     return this.request('/logical-switch-ports', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateLogicalSwitchPort(id: string, data: any) {
+  async updateLogicalSwitchPort(id: string, data: any): Promise<LogicalSwitchPort> {
     return this.request(`/logical-switch-ports/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteLogicalSwitchPort(id: string) {
+  async deleteLogicalSwitchPort(id: string): Promise<void> {
     return this.request(`/logical-switch-ports/${id}`, {
       method: 'DELETE',
     });
   }
 
   // ACLs
-  async listACLs(switchId?: string, limit = 20, offset = 0) {
+  async listACLs(switchId?: string, limit = 20, offset = 0): Promise<PaginatedResponse<ACL>> {
     const query = new URLSearchParams({
       limit: limit.toString(),
       offset: offset.toString(),
@@ -221,54 +238,54 @@ class ApiClient {
     return this.request(`/acls?${query}`);
   }
 
-  async getACL(id: string) {
+  async getACL(id: string): Promise<ACL> {
     return this.request(`/acls/${id}`);
   }
 
-  async createACL(data: any) {
+  async createACL(data: any): Promise<ACL> {
     return this.request('/acls', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateACL(id: string, data: any) {
+  async updateACL(id: string, data: any): Promise<ACL> {
     return this.request(`/acls/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteACL(id: string) {
+  async deleteACL(id: string): Promise<void> {
     return this.request(`/acls/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Load Balancers
-  async listLoadBalancers(limit = 20, offset = 0) {
+  async listLoadBalancers(limit = 20, offset = 0): Promise<PaginatedResponse<LoadBalancer>> {
     return this.request(`/load-balancers?limit=${limit}&offset=${offset}`);
   }
 
-  async getLoadBalancer(id: string) {
+  async getLoadBalancer(id: string): Promise<LoadBalancer> {
     return this.request(`/load-balancers/${id}`);
   }
 
-  async createLoadBalancer(data: any) {
+  async createLoadBalancer(data: any): Promise<LoadBalancer> {
     return this.request('/load-balancers', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateLoadBalancer(id: string, data: any) {
+  async updateLoadBalancer(id: string, data: any): Promise<LoadBalancer> {
     return this.request(`/load-balancers/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteLoadBalancer(id: string) {
+  async deleteLoadBalancer(id: string): Promise<void> {
     return this.request(`/load-balancers/${id}`, {
       method: 'DELETE',
     });

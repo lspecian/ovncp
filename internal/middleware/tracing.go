@@ -8,6 +8,7 @@ import (
 	"github.com/lspecian/ovncp/internal/tracing"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
@@ -32,10 +33,10 @@ func Tracing(serviceName string) gin.HandlerFunc {
 				semconv.HTTPRouteKey.String(c.FullPath()),
 				semconv.HTTPURLKey.String(c.Request.URL.String()),
 				semconv.HTTPSchemeKey.String(c.Request.URL.Scheme),
-				semconv.HTTPHostKey.String(c.Request.Host),
+				attribute.String("http.host", c.Request.Host),
 				semconv.HTTPUserAgentKey.String(c.Request.UserAgent()),
 				semconv.HTTPRequestContentLengthKey.Int64(c.Request.ContentLength),
-				semconv.NetPeerIPKey.String(c.ClientIP()),
+				attribute.String("net.peer.ip", c.ClientIP()),
 			),
 		)
 		defer span.End()
@@ -58,15 +59,9 @@ func Tracing(serviceName string) gin.HandlerFunc {
 			for _, err := range c.Errors {
 				span.RecordError(err.Err)
 			}
-			span.SetStatus(trace.Status{
-				Code:    trace.StatusCodeError,
-				Message: c.Errors.Last().Error(),
-			})
+			span.SetStatus(codes.Error, c.Errors.Last().Error())
 		} else if c.Writer.Status() >= 400 {
-			span.SetStatus(trace.Status{
-				Code:    trace.StatusCodeError,
-				Message: fmt.Sprintf("HTTP %d", c.Writer.Status()),
-			})
+			span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", c.Writer.Status()))
 		}
 
 		// Inject trace context into response headers
@@ -103,8 +98,5 @@ func AddSpanEvent(c *gin.Context, name string, attrs ...attribute.KeyValue) {
 func RecordSpanError(c *gin.Context, err error) {
 	span := GetSpanFromContext(c)
 	span.RecordError(err)
-	span.SetStatus(trace.Status{
-		Code:    trace.StatusCodeError,
-		Message: err.Error(),
-	})
+	span.SetStatus(codes.Error, err.Error())
 }

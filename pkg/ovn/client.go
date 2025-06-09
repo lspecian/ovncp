@@ -189,3 +189,23 @@ func (c *Client) GetClient() client.Client {
 
 	return c.nbClient
 }
+
+
+// GetConnectionInfo returns current connection information
+func (c *Client) GetConnectionInfo() map[string]interface{} {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	info := map[string]interface{}{
+		"connected": c.connected,
+		"address":   c.config.NorthboundDB,
+		"timeout":   c.config.Timeout.String(),
+	}
+
+	if c.connected && !c.lastPing.IsZero() {
+		info["last_ping"] = c.lastPing.Format(time.RFC3339)
+		info["ping_age"] = time.Since(c.lastPing).String()
+	}
+
+	return info
+}

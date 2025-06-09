@@ -480,3 +480,52 @@ func getTenantFromContext(ctx context.Context) string {
 func ContextWithTenant(ctx context.Context, tenantID string) context.Context {
 	return context.WithValue(ctx, "tenant_id", tenantID)
 }
+
+// ExecuteTransaction executes a transaction with tenant filtering
+func (s *TenantOVNService) ExecuteTransaction(ctx context.Context, ops []TransactionOp) error {
+	// TODO: Add tenant validation for transaction operations
+	return s.ovnService.ExecuteTransaction(ctx, ops)
+}
+
+// GetTopology returns the topology filtered by tenant
+func (s *TenantOVNService) GetTopology(ctx context.Context) (*Topology, error) {
+	tenantID := getTenantFromContext(ctx)
+	if tenantID == "" {
+		return s.ovnService.GetTopology(ctx)
+	}
+
+	// Get full topology
+	topology, err := s.ovnService.GetTopology(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter topology by tenant
+	filteredTopology := &Topology{
+		Switches:    []*models.LogicalSwitch{},
+		Routers:     []*models.LogicalRouter{},
+		Ports:       []*models.LogicalSwitchPort{},
+		RouterPorts: []*models.LogicalRouterPort{},
+		ACLs:        []*models.ACL{},
+		Connections: []Connection{},
+		Timestamp:   topology.Timestamp,
+	}
+
+	// Filter switches
+	for _, sw := range topology.Switches {
+		if s.belongsToTenant(ctx, sw.UUID, tenantID) {
+			filteredTopology.Switches = append(filteredTopology.Switches, sw)
+		}
+	}
+
+	// Filter routers
+	for _, router := range topology.Routers {
+		if s.belongsToTenant(ctx, router.UUID, tenantID) {
+			filteredTopology.Routers = append(filteredTopology.Routers, router)
+		}
+	}
+
+	// TODO: Filter other components based on tenant ownership
+
+	return filteredTopology, nil
+}

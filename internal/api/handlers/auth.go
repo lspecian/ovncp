@@ -26,6 +26,12 @@ type LoginRequest struct {
 	Provider string `json:"provider" binding:"required"`
 }
 
+// LocalLoginRequest represents the local login request
+type LocalLoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
 // LoginResponse contains the OAuth authorization URL
 type LoginResponse struct {
 	AuthURL string `json:"auth_url"`
@@ -236,4 +242,26 @@ func (h *AuthHandler) DeactivateUser(c *gin.Context) {
 	}
 	
 	c.JSON(http.StatusOK, gin.H{"message": "User deactivated successfully"})
+}
+
+// LocalLogin handles local username/password authentication
+func (h *AuthHandler) LocalLogin(c *gin.Context) {
+	var req LocalLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	session, err := h.authService.LocalLogin(c.Request.Context(), req.Username, req.Password)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, TokenResponse{
+		AccessToken:  session.AccessToken,
+		RefreshToken: session.RefreshToken,
+		ExpiresAt:    session.ExpiresAt.Unix(),
+		User:         session.User,
+	})
 }

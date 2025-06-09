@@ -10,13 +10,14 @@ interface AuthState {
   
   // Actions
   login: (provider: string) => Promise<void>;
+  localLogin: (username: string, password: string) => Promise<void>;
   handleCallback: (provider: string, code: string, state: string) => Promise<void>;
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   session: null,
   user: null,
   isLoading: false,
@@ -30,6 +31,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       window.location.href = auth_url;
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Login failed' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  localLogin: async (username: string, password: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const session = await api.localLogin(username, password);
+      set({ session, user: session.user });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Invalid username or password' });
+      throw error;
     } finally {
       set({ isLoading: false });
     }

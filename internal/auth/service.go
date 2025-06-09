@@ -22,6 +22,7 @@ type Service interface {
 	UpdateUserRole(ctx context.Context, userID string, role models.UserRole) error
 	ListUsers(ctx context.Context, limit, offset int) ([]*models.User, int, error)
 	DeactivateUser(ctx context.Context, userID string) error
+	LocalLogin(ctx context.Context, username, password string) (*models.Session, error)
 }
 
 type service struct {
@@ -396,4 +397,93 @@ func (s *service) DeactivateUser(ctx context.Context, userID string) error {
 
 func generateToken() string {
 	return uuid.New().String()
+}
+
+// LocalLogin authenticates a user with username and password
+func (s *service) LocalLogin(ctx context.Context, username, password string) (*models.Session, error) {
+	// For demo purposes, accept admin/admin credentials
+	if username != "admin" || password != "admin" {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Begin transaction
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Find or create local admin user
+	var user models.User
+	err = tx.QueryRowContext(ctx,
+		"SELECT id, email, name, picture, provider, provider_id, role, active, last_login_at, created_at, updated_at FROM users WHERE email = $1 AND provider = 'local'",
+		"admin@ovncp.local").Scan(
+		&user.ID, &user.Email, &user.Name, &user.Picture, &user.Provider,
+		&user.ProviderID, &user.Role, &user.Active, &user.LastLoginAt,
+		&user.CreatedAt, &user.UpdatedAt)
+
+	if err == sql.ErrNoRows {
+		// Create default admin user
+		user = models.User{
+			ID:         uuid.New().String(),
+			Email:      "admin@ovncp.local",
+			Name:       "Administrator",
+			Picture:    "",
+			Provider:   "local",
+			ProviderID: "admin",
+			Role:       models.RoleAdmin,
+			Active:     true,
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+		}
+
+		_, err = tx.ExecContext(ctx,
+			"INSERT INTO users (id, email, name, picture, provider, provider_id, role, active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+			user.ID, user.Email, user.Name, user.Picture, user.Provider,
+			user.ProviderID, user.Role, user.Active, user.CreatedAt, user.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	if !user.Active {
+		return nil, fmt.Errorf("user account is deactivated")
+	}
+
+	// Update last login
+	_, err = tx.ExecContext(ctx,
+		"UPDATE users SET last_login_at = $1 WHERE id = $2",
+		time.Now(), user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create session
+	session := &models.Session{
+		ID:           uuid.New().String(),
+		UserID:       user.ID,
+		AccessToken:  generateToken(),
+		RefreshToken: generateToken(),
+		ExpiresAt:    time.Now().Add(s.config.TokenExpiration),
+		CreatedAt:    time.Now(),
+	}
+
+	_, err = tx.ExecContext(ctx,
+		"INSERT INTO sessions (id, user_id, access_token, refresh_token, expires_at, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
+		session.ID, session.UserID, session.AccessToken, session.RefreshToken, session.ExpiresAt, session.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// Attach user to session for response
+	session.User = &user
+
+	return session, nil
 }

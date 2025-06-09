@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import cytoscape, { Core, NodeSingular, EdgeSingular } from 'cytoscape';
+import cytoscape, { Core, StylesheetStyle } from 'cytoscape';
 import cola from 'cytoscape-cola';
 import { useTheme } from '@/components/theme-provider';
 import { TopologyData } from '@/hooks/use-topology';
@@ -18,7 +18,7 @@ export default function NetworkGraph({ data, onNodeClick }: NetworkGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   const { theme } = useTheme();
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [, setSelectedNode] = useState<string | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -93,7 +93,7 @@ export default function NetworkGraph({ data, onNodeClick }: NetworkGraphProps) {
 
     // Define styles based on theme
     const isDark = theme === 'dark';
-    const style: cytoscape.Stylesheet[] = [
+    const style: StylesheetStyle[] = [
       {
         selector: 'node',
         style: {

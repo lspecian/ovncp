@@ -1,7 +1,6 @@
 package visualization
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -134,9 +133,10 @@ func (v *TopologyVisualizer) GenerateGraph(options *VisualizationOptions) (*Topo
 	}
 
 	// Add load balancers
-	if options.IncludeLoadBalancers {
-		v.addLoadBalancers(graph, options)
-	}
+	// NOTE: LoadBalancers field needs to be added to Topology struct if needed
+	// if options.IncludeLoadBalancers {
+	// 	v.addLoadBalancers(graph, options)
+	// }
 
 	// Add ACLs
 	if options.IncludeACLs && options.DetailLevel == DetailLevelFull {
@@ -230,28 +230,29 @@ func (v *TopologyVisualizer) addPorts(graph *TopologyGraph, options *Visualizati
 		portNode := GraphNode{
 			ID:    "port:" + port.UUID,
 			Label: port.Name,
-				Type:  NodeTypePort,
-				Group: "ports",
-				Properties: map[string]interface{}{
-					"uuid":       port.UUID,
-					"type":       port.Type,
-					"macAddress": port.MAC,
-					"ipAddress":  strings.Join(port.Addresses, ", "),
-				},
-				Style: &NodeStyle{
-					Shape:       "dot",
-					Color:       "#FFB74D",
-					BorderColor: "#FFA726",
-					Size:        20,
-				},
-			}
+			Type:  NodeTypePort,
+			Group: "ports",
+			Properties: map[string]interface{}{
+				"uuid":       port.UUID,
+				"type":       port.Type,
+				"macAddress": port.MAC,
+				"ipAddress":  strings.Join(port.Addresses, ", "),
+			},
+			Style: &NodeStyle{
+				Shape:       "dot",
+				Color:       "#FFB74D",
+				BorderColor: "#FFA726",
+				Size:        20,
+			},
+		}
 
-			graph.Nodes = append(graph.Nodes, portNode)
+		graph.Nodes = append(graph.Nodes, portNode)
 
-			// Add edge from switch to port
+		// Add edge from switch to port if we have a switch ID
+		if port.SwitchID != "" {
 			edge := GraphEdge{
-				ID:     fmt.Sprintf("edge:%s-%s", sw.UUID, port.UUID),
-				Source: "switch:" + sw.UUID,
+				ID:     fmt.Sprintf("edge:%s-%s", port.SwitchID, port.UUID),
+				Source: "switch:" + port.SwitchID,
 				Target: "port:" + port.UUID,
 				Type:   "contains",
 				Style: &EdgeStyle{
@@ -261,74 +262,63 @@ func (v *TopologyVisualizer) addPorts(graph *TopologyGraph, options *Visualizati
 				},
 			}
 			graph.Edges = append(graph.Edges, edge)
+		}
 
-			// Add router connections
-			if port.Type == "router" && port.Options["router-port"] != "" {
-				routerPortID := port.Options["router-port"]
-				routerEdge := GraphEdge{
-					ID:     fmt.Sprintf("edge:router-%s-%s", port.UUID, routerPortID),
-					Source: "port:" + port.UUID,
-					Target: "port:" + routerPortID,
-					Type:   "connected",
-					Label:  "L3",
-					Style: &EdgeStyle{
-						Color:    "#4CAF50",
-						Width:    3,
-						Style:    "solid",
-						Animated: true,
-					},
-				}
-				graph.Edges = append(graph.Edges, routerEdge)
+		// Add router connections
+		if port.Type == "router" && port.Options["router-port"] != "" {
+			routerPortID := port.Options["router-port"]
+			routerEdge := GraphEdge{
+				ID:     fmt.Sprintf("edge:router-%s-%s", port.UUID, routerPortID),
+				Source: "port:" + port.UUID,
+				Target: "port:" + routerPortID,
+				Type:   "connected",
+				Label:  "L3",
+				Style: &EdgeStyle{
+					Color:    "#4CAF50",
+					Width:    3,
+					Style:    "solid",
+					Animated: true,
+				},
 			}
+			graph.Edges = append(graph.Edges, routerEdge)
 		}
 	}
 
 	// Process router ports
-	for _, router := range v.topology.Routers {
-		for _, port := range router.Ports {
-			if options.DetailLevel < DetailLevelFull && !v.isSignificantPort(port) {
-				continue
-			}
-
-			portNode := GraphNode{
-				ID:    "port:" + port.UUID,
-				Label: port.Name,
-				Type:  NodeTypePort,
-				Group: "ports",
-				Properties: map[string]interface{}{
-					"uuid":       port.UUID,
-					"type":       "router",
-					"macAddress": port.MAC,
-					"networks":   port.Networks,
-				},
-				Style: &NodeStyle{
-					Shape:       "dot",
-					Color:       "#81C784",
-					BorderColor: "#66BB6A",
-					Size:        20,
-				},
-			}
-
-			graph.Nodes = append(graph.Nodes, portNode)
-
-			// Add edge from router to port
-			edge := GraphEdge{
-				ID:     fmt.Sprintf("edge:%s-%s", router.UUID, port.UUID),
-				Source: "router:" + router.UUID,
-				Target: "port:" + port.UUID,
-				Type:   "contains",
-				Style: &EdgeStyle{
-					Color: "#757575",
-					Width: 2,
-					Style: "solid",
-				},
-			}
-			graph.Edges = append(graph.Edges, edge)
+	for _, rp := range v.topology.RouterPorts {
+		if options.DetailLevel < DetailLevelFull {
+			continue
 		}
+
+		portNode := GraphNode{
+			ID:    "port:" + rp.UUID,
+			Label: rp.Name,
+			Type:  NodeTypePort,
+			Group: "ports",
+			Properties: map[string]interface{}{
+				"uuid":       rp.UUID,
+				"type":       "router",
+				"macAddress": rp.MAC,
+				"networks":   rp.Networks,
+			},
+			Style: &NodeStyle{
+				Shape:       "dot",
+				Color:       "#81C784",
+				BorderColor: "#66BB6A",
+				Size:        20,
+			},
+		}
+
+		graph.Nodes = append(graph.Nodes, portNode)
+
+		// Note: We'd need to determine which router owns this port
+		// This is a simplified version - in real implementation you'd need proper mapping
 	}
 }
 
 // addLoadBalancers adds load balancer nodes to the graph
+// NOTE: This function is commented out until LoadBalancers field is added to Topology struct
+/*
 func (v *TopologyVisualizer) addLoadBalancers(graph *TopologyGraph, options *VisualizationOptions) {
 	for _, lb := range v.topology.LoadBalancers {
 		node := GraphNode{
@@ -371,69 +361,35 @@ func (v *TopologyVisualizer) addLoadBalancers(graph *TopologyGraph, options *Vis
 		}
 	}
 }
+*/
 
 // addACLs adds ACL representations to the graph
 func (v *TopologyVisualizer) addACLs(graph *TopologyGraph, options *VisualizationOptions) {
-	// Group ACLs by entity
-	aclsByEntity := make(map[string][]*ovn.ACL)
-	
-	for _, acl := range v.topology.ACLs {
-		entityID := acl.EntityID
-		aclsByEntity[entityID] = append(aclsByEntity[entityID], acl)
+	// Create a single ACL summary node for all ACLs
+	if len(v.topology.ACLs) == 0 {
+		return
 	}
 
-	// Add ACL nodes for each entity
-	for entityID, acls := range aclsByEntity {
-		if len(acls) == 0 {
-			continue
-		}
-
-		// Create a summary node for ACLs
-		node := GraphNode{
-			ID:    "acl-group:" + entityID,
-			Label: fmt.Sprintf("ACLs (%d rules)", len(acls)),
-			Type:  NodeTypeACL,
-			Group: "acls",
-			Properties: map[string]interface{}{
-				"entityID":  entityID,
-				"ruleCount": len(acls),
-				"rules":     v.summarizeACLs(acls),
-			},
-			Style: &NodeStyle{
-				Shape:       "shield",
-				Color:       "#FF7043",
-				BorderColor: "#FF5722",
-				Size:        30,
-				Icon:        "security",
-			},
-		}
-
-		graph.Nodes = append(graph.Nodes, node)
-
-		// Connect to entity
-		var targetID string
-		if strings.Contains(entityID, "switch") {
-			targetID = "switch:" + entityID
-		} else if strings.Contains(entityID, "port") {
-			targetID = "port:" + entityID
-		}
-
-		if targetID != "" {
-			edge := GraphEdge{
-				ID:     fmt.Sprintf("edge:acl-%s", entityID),
-				Source: "acl-group:" + entityID,
-				Target: targetID,
-				Type:   "protects",
-				Label:  "ACL",
-				Style: &EdgeStyle{
-					Color: "#FF7043",
-					Width: 2,
-					Style: "dotted",
-				},
-			}
-			graph.Edges = append(graph.Edges, edge)
-		}
+	// Create a summary node for all ACLs
+	node := GraphNode{
+		ID:    "acl-group:all",
+		Label: fmt.Sprintf("ACLs (%d rules)", len(v.topology.ACLs)),
+		Type:  NodeTypeACL,
+		Group: "acls",
+		Properties: map[string]interface{}{
+			"ruleCount": len(v.topology.ACLs),
+			"rules":     v.summarizeACLs(v.topology.ACLs),
+		},
+		Style: &NodeStyle{
+			Shape:       "shield",
+			Color:       "#FF7043",
+			BorderColor: "#FF5722",
+			Size:        30,
+			Icon:        "security",
+		},
 	}
+
+	graph.Nodes = append(graph.Nodes, node)
 }
 
 // summarizeACLs creates a summary of ACL rules

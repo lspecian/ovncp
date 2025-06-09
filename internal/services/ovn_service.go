@@ -18,6 +18,11 @@ func NewOVNService(client *ovn.Client) *OVNService {
 	}
 }
 
+// GetOVNClient returns the underlying OVN client
+func (s *OVNService) GetOVNClient() *ovn.Client {
+	return s.client
+}
+
 func (s *OVNService) ListLogicalSwitches(ctx context.Context) ([]*models.LogicalSwitch, error) {
 	return s.client.ListLogicalSwitches(ctx)
 }
@@ -189,3 +194,4 @@ func (s *OVNService) DeleteACL(ctx context.Context, id string) error {
 
 	return s.client.DeleteACL(ctx, id)
 }
+

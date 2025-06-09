@@ -25,6 +25,7 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, ovnService ovn.Service,
 	authGroup := v1.Group("/auth")
 	{
 		authGroup.POST("/login", authHandler.Login)
+		authGroup.POST("/login/local", authHandler.LocalLogin)  // Local login endpoint
 		authGroup.GET("/callback/:provider", authHandler.Callback)
 		authGroup.POST("/refresh", authHandler.Refresh)
 	}

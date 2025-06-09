@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -106,7 +107,7 @@ func ErrorLogger(logger *logging.Logger) gin.HandlerFunc {
 
 			fields := []zap.Field{
 				zap.Error(err.Err),
-				zap.String("type", err.Type.String()),
+				zap.Uint64("type", uint64(err.Type)),
 				zap.String("method", c.Request.Method),
 				zap.String("path", c.Request.URL.Path),
 			}
@@ -159,5 +160,59 @@ func WithLogger(logger *logging.Logger) gin.HandlerFunc {
 
 		c.Set("logger", logger)
 		c.Next()
+	}
+}
+
+// LoggerConfig defines the config for Logger middleware
+type LoggerConfig struct {
+	Logger       *zap.Logger
+	SkipPaths    []string
+	SkipPatterns []string
+}
+
+// LoggerWithConfig returns a gin.HandlerFunc (middleware) with config
+func LoggerWithConfig(cfg LoggerConfig) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Skip logging for certain paths
+		for _, path := range cfg.SkipPaths {
+			if c.Request.URL.Path == path {
+				c.Next()
+				return
+			}
+		}
+
+		// Skip logging for patterns
+		for _, pattern := range cfg.SkipPatterns {
+			if strings.Contains(c.Request.URL.Path, pattern) {
+				c.Next()
+				return
+			}
+		}
+
+		// Use the logging middleware
+		start := time.Now()
+		path := c.Request.URL.Path
+		raw := c.Request.URL.RawQuery
+
+		// Process request
+		c.Next()
+
+		// Log only errors or slow requests
+		latency := time.Since(start)
+		if c.Writer.Status() >= 400 || latency > time.Second {
+			if raw != "" {
+				path = path + "?" + raw
+			}
+
+			cfg.Logger.Info("Request",
+				zap.String("method", c.Request.Method),
+				zap.String("path", path),
+				zap.Int("status", c.Writer.Status()),
+				zap.Duration("latency", latency),
+				zap.String("client_ip", c.ClientIP()),
+				zap.String("user_agent", c.Request.UserAgent()),
+				zap.String("request_id", c.GetString("request_id")),
+			)
+		}
 	}
 }

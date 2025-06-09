@@ -344,40 +344,40 @@ func (h *VisualizationHandler) findNodeDetails(topology *services.Topology, node
 	}
 
 	// Check ports
+	// TODO: Fix this - sw.Ports contains port UUIDs, not port objects
+	/*
 	for _, sw := range topology.Switches {
-		for _, port := range sw.Ports {
-			if port.UUID == nodeID || "port:"+port.UUID == nodeID {
+		for _, portID := range sw.Ports {
+			if portID == nodeID || "port:"+portID == nodeID {
+				// Need to fetch actual port details
 				return map[string]interface{}{
-					"id":         port.UUID,
+					"id":         portID,
 					"type":       "port",
-					"name":       port.Name,
 					"parentType": "switch",
 					"parentID":   sw.UUID,
 					"parentName": sw.Name,
-					"macAddress": port.MAC,
-					"addresses":  port.Addresses,
-					"options":    port.Options,
 				}
 			}
 		}
 	}
+	*/
 
+	// TODO: Fix this - router.Ports contains port UUIDs, not port objects
+	/*
 	for _, router := range topology.Routers {
-		for _, port := range router.Ports {
-			if port.UUID == nodeID || "port:"+port.UUID == nodeID {
+		for _, portID := range router.Ports {
+			if portID == nodeID || "port:"+portID == nodeID {
 				return map[string]interface{}{
-					"id":         port.UUID,
+					"id":         portID,
 					"type":       "port",
-					"name":       port.Name,
 					"parentType": "router",
 					"parentID":   router.UUID,
 					"parentName": router.Name,
-					"macAddress": port.MAC,
-					"networks":   port.Networks,
 				}
 			}
 		}
 	}
+	*/
 
 	return nil
 }
@@ -390,25 +390,21 @@ func (h *VisualizationHandler) findPath(topology *services.Topology, source, tar
 	// Add switch-port connections
 	for _, sw := range topology.Switches {
 		swID := "switch:" + sw.UUID
-		for _, port := range sw.Ports {
-			portID := "port:" + port.UUID
+		for _, portUUID := range sw.Ports {
+			portID := "port:" + portUUID
 			adj[swID] = append(adj[swID], portID)
 			adj[portID] = append(adj[portID], swID)
 
-			// Add router connections
-			if port.Type == "router" && port.Options["router-port"] != "" {
-				routerPortID := "port:" + port.Options["router-port"]
-				adj[portID] = append(adj[portID], routerPortID)
-				adj[routerPortID] = append(adj[routerPortID], portID)
-			}
+			// TODO: Add router connections
+			// Need to fetch actual port details to check type and options
 		}
 	}
 
 	// Add router-port connections
 	for _, router := range topology.Routers {
 		routerID := "router:" + router.UUID
-		for _, port := range router.Ports {
-			portID := "port:" + port.UUID
+		for _, portUUID := range router.Ports {
+			portID := "port:" + portUUID
 			adj[routerID] = append(adj[routerID], portID)
 			adj[portID] = append(adj[portID], routerID)
 		}
