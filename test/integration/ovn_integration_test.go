@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/lspecian/ovncp/internal/config"
+	"github.com/lspecian/ovncp/internal/models"
 	"github.com/lspecian/ovncp/pkg/ovn"
 )
 
@@ -55,6 +56,7 @@ func setupOVNClient(t *testing.T) *ovn.Client {
 // Logical Switch Integration Tests
 func TestOVN_LogicalSwitch_CRUD(t *testing.T) {
 	client := setupOVNClient(t)
+	ctx := context.Background()
 	
 	// Create a unique switch name
 	switchName := "test-switch-" + uuid.New().String()[:8]
@@ -107,11 +109,11 @@ func TestOVN_LogicalSwitch_CRUD(t *testing.T) {
 	// Test Update
 	t.Run("Update", func(t *testing.T) {
 		newDesc := "Updated description"
-		updates := map[string]interface{}{
-			"description": newDesc,
+		updatedLS := &models.LogicalSwitch{
+			Description: newDesc,
 		}
 		
-		ls, err := client.UpdateLogicalSwitch(switchUUID, updates)
+		ls, err := client.UpdateLogicalSwitch(ctx, switchUUID, updatedLS)
 		assert.NoError(t, err)
 		assert.Equal(t, newDesc, ls.Description)
 		
@@ -127,7 +129,7 @@ func TestOVN_LogicalSwitch_CRUD(t *testing.T) {
 		assert.NoError(t, err)
 		
 		// Verify deletion
-		_, err = client.GetLogicalSwitch(switchUUID)
+		_, err = client.GetLogicalSwitch(ctx, switchUUID)
 		assert.Error(t, err)
 	})
 }

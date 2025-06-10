@@ -69,17 +69,15 @@ func setupTestServer(t *testing.T) *httptest.Server {
 	err = ovnClient.Connect(ctx)
 	require.NoError(t, err)
 	
-	// Initialize logger
-	logger := zap.NewNop()
-	
 	// Initialize service
-	svc := services.NewOVNService(ovnClient)
+	// svc := services.NewOVNService(ovnClient)
 	
 	// Setup router
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	// TODO: Setup API routes properly
 	// Integration tests need to be updated to match new architecture
+	_ = ovnClient // temporary: suppress unused variable warning
 	
 	// Create test server
 	server := httptest.NewServer(router)

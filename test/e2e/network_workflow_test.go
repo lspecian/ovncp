@@ -4,7 +4,6 @@
 package e2e
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -497,7 +496,7 @@ func TestE2E_ResponsiveDesign(t *testing.T) {
 			defer browser.Close()
 			
 			context, err := browser.NewContext(playwright.BrowserNewContextOptions{
-				Viewport: &playwright.BrowserNewContextOptionsViewport{
+				Viewport: &playwright.Size{
 					Width:  vp.width,
 					Height: vp.height,
 				},
