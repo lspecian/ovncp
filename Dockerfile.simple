@@ -29,7 +29,7 @@ RUN addgroup -g 1000 -S ovncp && \
     adduser -u 1000 -S ovncp -G ovncp
 
 # Setup directories
-RUN mkdir -p /app /data /usr/share/nginx/html /var/log/supervisor && \
+RUN mkdir -p /app /data /usr/share/nginx/html /var/log/supervisor /var/cache/nginx /var/log/nginx && \
     chown -R ovncp:ovncp /app /data && \
     chown -R ovncp:ovncp /var/cache/nginx /var/log/nginx && \
     touch /var/run/nginx.pid && \
