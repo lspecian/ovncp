@@ -10,8 +10,13 @@ WORKDIR /app
 # Copy go mod files
 COPY go.mod go.sum ./
 
-# Download dependencies
-RUN go mod download
+# Download dependencies with retry and fallback
+RUN go env -w GOPROXY=https://proxy.golang.org,direct && \
+    go env -w GOSUMDB=sum.golang.org && \
+    for i in 1 2 3; do \
+        go mod download && break || \
+        (echo "Retry $i failed, waiting..." && sleep 10); \
+    done
 
 # Copy source code
 COPY . .
